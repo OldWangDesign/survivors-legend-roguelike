@@ -1,0 +1,20 @@
+# Godot editor cache
+.godot/
+
+# Build outputs
+build/
+
+# Export presets (may contain signing config)
+export_presets.cfg
+
+# Godot import cache
+*.import
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+
+# Godot UID files (auto-generated)
+*.uid
