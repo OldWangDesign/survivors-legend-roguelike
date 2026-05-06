@@ -47,8 +47,9 @@ func _physics_process(delta: float) -> void:
 	if _trail_positions.size() > TRAIL_LENGTH:
 		_trail_positions.resize(TRAIL_LENGTH)
 
-	var hit_r_sq := (radius + 12.0) * (radius + 12.0)
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	var hit_r := radius + 12.0
+	var hit_r_sq := hit_r * hit_r
+	for enemy in SpatialGrid.get_nearby(global_position, hit_r):
 		if enemy in _hit_enemies:
 			continue
 		if global_position.distance_squared_to(enemy.global_position) < hit_r_sq:
@@ -65,26 +66,14 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	# Spiral energy trail
 	for i in range(_trail_positions.size() - 1):
 		var t := 1.0 - float(i) / float(_trail_positions.size())
 		var from := _trail_positions[i] - global_position
 		var to := _trail_positions[i + 1] - global_position
-		# Outer energy field
 		draw_line(from, to, Color(color, t * 0.08), radius * 4.0 * t)
-		# Mid glow
 		draw_line(from, to, Color(color, t * 0.25), radius * 1.8 * t)
-		# Core trail
 		draw_line(from, to, Color(1, 1, 1, t * 0.4), radius * 0.6 * t)
-		# Spiral particles orbiting the trail
-		if i % 2 == 0:
-			var mid := (from + to) * 0.5
-			var perp := (to - from).normalized().orthogonal()
-			var spiral_offset := perp * sin(_time * 12.0 + float(i) * 0.8) * radius * 1.5 * t
-			draw_circle(mid + spiral_offset, 2.0 * t, Color(color, t * 0.7))
-			draw_circle(mid - spiral_offset * 0.6, 1.5 * t, Color(1, 1, 1, t * 0.4))
 
-	# Pulsating energy core
 	var pulse := sin(_time * 15.0) * 0.25 + 0.75
 	var core_r := radius * 1.2
 	draw_circle(Vector2.ZERO, core_r * 2.5 * pulse, Color(color, 0.08))
@@ -92,14 +81,6 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, core_r * 1.2, Color(color, 0.35))
 	draw_circle(Vector2.ZERO, core_r * 0.7, Color(color.lightened(0.5), 0.6))
 	draw_circle(Vector2.ZERO, core_r * 0.3, Color(1, 1, 1, 0.8))
-
-	# Rotating energy spikes around projectile
-	for i in range(4):
-		var spike_angle := _time * 8.0 + (TAU / 4.0) * i
-		var spike_len := radius * 2.0 * pulse
-		var spike_end := Vector2(cos(spike_angle), sin(spike_angle)) * spike_len
-		draw_line(Vector2.ZERO, spike_end, Color(color, 0.3), 1.5)
-		draw_circle(spike_end, 1.5, Color(1, 1, 1, 0.5))
 
 
 func _spawn_damage_number(pos: Vector2, dmg: int) -> void:

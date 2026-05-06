@@ -68,23 +68,11 @@ func play_weapon_sound(sound_name: String = "weapon_fire") -> void:
 
 
 func get_enemies_in_range(center: Vector2, range_val: float) -> Array:
-	var result: Array = []
-	var range_sq := range_val * range_val
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if center.distance_squared_to(enemy.global_position) < range_sq:
-			result.append(enemy)
-	return result
+	return SpatialGrid.get_in_range(center, range_val)
 
 
 func get_nearest_enemy(from: Vector2, max_range: float = 999999.0) -> Node2D:
-	var nearest: Node2D = null
-	var nearest_dist_sq := max_range * max_range
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		var dist_sq := from.distance_squared_to(enemy.global_position)
-		if dist_sq < nearest_dist_sq:
-			nearest_dist_sq = dist_sq
-			nearest = enemy
-	return nearest
+	return SpatialGrid.get_nearest(from, max_range)
 
 
 func spawn_damage_number(pos: Vector2, dmg: int) -> void:

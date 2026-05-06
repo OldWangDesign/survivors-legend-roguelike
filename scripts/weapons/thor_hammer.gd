@@ -21,7 +21,7 @@ func attack() -> void:
 		start_cooldown()
 		return
 
-	var enemies := get_tree().get_nodes_in_group("enemies")
+	var enemies := SpatialGrid.get_nearby(player.global_position, 500.0)
 	if enemies.is_empty():
 		start_cooldown()
 		return
@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 		_return_timer += delta
 
 		var dmg := get_damage()
-		for enemy in get_tree().get_nodes_in_group("enemies"):
+		for enemy in SpatialGrid.get_nearby(_hammer_pos, 30.0):
 			if _hammer_pos.distance_squared_to(enemy.global_position) < 30.0 * 30.0:
 				enemy.take_damage(dmg)
 				spawn_damage_number(enemy.global_position, dmg)
@@ -83,7 +83,7 @@ func _process(delta: float) -> void:
 		_hammer_pos += _hammer_vel * delta
 
 		var dmg := get_damage()
-		for enemy in get_tree().get_nodes_in_group("enemies"):
+		for enemy in SpatialGrid.get_nearby(_hammer_pos, 30.0):
 			if _hammer_pos.distance_squared_to(enemy.global_position) < 30.0 * 30.0:
 				enemy.take_damage(int(dmg * 0.5))
 				spawn_damage_number(enemy.global_position, int(dmg * 0.5))
@@ -103,11 +103,9 @@ func _process(delta: float) -> void:
 func _thunder_explosion() -> void:
 	var area: float = GameData.get_weapon_area(weapon_type, weapon_level)
 	var dmg := int(get_damage() * 1.5)
-	var r_sq := area * area
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if _hammer_pos.distance_squared_to(enemy.global_position) < r_sq:
-			enemy.take_damage(dmg)
-			spawn_damage_number(enemy.global_position, dmg)
+	for enemy in SpatialGrid.get_in_range(_hammer_pos, area):
+		enemy.take_damage(dmg)
+		spawn_damage_number(enemy.global_position, dmg)
 
 	VfxPool.ring_wave(_hammer_pos, Color(0.6, 0.8, 1.0), area * 1.5, 0.5, 5.0)
 	VfxPool.spark_burst(_hammer_pos, 24, Color(0.7, 0.9, 1.0), area, 0.5)

@@ -32,7 +32,9 @@ func attack() -> void:
 	var hit_range: float = WHIP_LENGTH * area
 	var dmg: int = get_damage()
 
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in SpatialGrid.get_nearby(player.global_position, hit_range):
+		if not is_instance_valid(enemy):
+			continue
 		var to_enemy: Vector2 = enemy.global_position - player.global_position
 		var dist: float = to_enemy.length()
 		if dist < hit_range and dist > 0.01:

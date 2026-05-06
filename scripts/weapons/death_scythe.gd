@@ -3,8 +3,10 @@ extends WeaponBase
 var _angle: float = 0.0
 var _time: float = 0.0
 var _prev_angles: Array[float] = []
+var _dmg_tick: float = 0.0
 const GHOST_COUNT := 4
 const SCYTHE_COUNT := 3
+const DMG_INTERVAL := 0.1
 
 
 func _ready() -> void:
@@ -33,14 +35,15 @@ func _process(delta: float) -> void:
 
 	var area: float = GameData.get_weapon_area(weapon_type, weapon_level)
 	var dmg := get_damage()
-	var hit_r_sq := 35.0 * 35.0
 
-	for i in range(SCYTHE_COUNT):
-		var a := _angle + (TAU / SCYTHE_COUNT) * i
-		var blade_pos := player.global_position + Vector2(cos(a), sin(a)) * area
-		for enemy in get_tree().get_nodes_in_group("enemies"):
-			if blade_pos.distance_squared_to(enemy.global_position) < hit_r_sq:
-				enemy.take_damage(dmg * delta * 2.5)
+	_dmg_tick += delta
+	if _dmg_tick >= DMG_INTERVAL:
+		_dmg_tick -= DMG_INTERVAL
+		for i in range(SCYTHE_COUNT):
+			var a := _angle + (TAU / SCYTHE_COUNT) * i
+			var blade_pos := player.global_position + Vector2(cos(a), sin(a)) * area
+			for enemy in SpatialGrid.get_in_range(blade_pos, 35.0):
+				enemy.take_damage(dmg * DMG_INTERVAL * 2.5)
 
 	queue_redraw()
 

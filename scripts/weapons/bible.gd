@@ -4,6 +4,8 @@ var _orbit_angle: float = 0.0
 var _active: bool = false
 var _active_timer: float = 0.0
 var _rune_phase: float = 0.0
+var _dmg_tick: float = 0.0
+const DMG_INTERVAL := 0.1
 
 
 func _ready() -> void:
@@ -40,13 +42,15 @@ func _process(delta: float) -> void:
 		_orbit_angle -= TAU
 
 	var dmg := get_damage()
-	var hit_r_sq := 22.0 * 22.0
-	for i in range(book_count):
-		var angle := _orbit_angle + (TAU / book_count) * i
-		var book_pos := player.global_position + Vector2(cos(angle), sin(angle)) * radius
-		for enemy in get_tree().get_nodes_in_group("enemies"):
-			if book_pos.distance_squared_to(enemy.global_position) < hit_r_sq:
-				enemy.take_damage(dmg * delta * 3.0)
+
+	_dmg_tick += delta
+	if _dmg_tick >= DMG_INTERVAL:
+		_dmg_tick -= DMG_INTERVAL
+		for i in range(book_count):
+			var angle := _orbit_angle + (TAU / book_count) * i
+			var book_pos := player.global_position + Vector2(cos(angle), sin(angle)) * radius
+			for enemy in SpatialGrid.get_in_range(book_pos, 22.0):
+				enemy.take_damage(dmg * DMG_INTERVAL * 3.0)
 
 	queue_redraw()
 

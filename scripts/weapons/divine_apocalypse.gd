@@ -3,8 +3,10 @@ extends WeaponBase
 var _orbit_angle: float = 0.0
 var _time: float = 0.0
 var _shield_hp: float = 100.0
+var _dmg_tick: float = 0.0
 const BOOK_COUNT := 12
 const SHIELD_MAX := 100.0
+const DMG_INTERVAL := 0.1
 
 
 func _ready() -> void:
@@ -29,24 +31,24 @@ func _process(delta: float) -> void:
 
 	var area: float = GameData.get_weapon_area(weapon_type, weapon_level)
 	var dmg := get_damage()
-	var hit_r_sq := 28.0 * 28.0
 
-	for i in range(BOOK_COUNT):
-		var angle := _orbit_angle + (TAU / BOOK_COUNT) * float(i)
-		var book_pos := player.global_position + Vector2(cos(angle), sin(angle)) * area
-		for enemy in get_tree().get_nodes_in_group("enemies"):
-			if book_pos.distance_squared_to(enemy.global_position) < hit_r_sq:
-				enemy.take_damage(dmg * delta * 2.0)
+	_dmg_tick += delta
+	if _dmg_tick >= DMG_INTERVAL:
+		_dmg_tick -= DMG_INTERVAL
+		for i in range(BOOK_COUNT):
+			var angle := _orbit_angle + (TAU / BOOK_COUNT) * float(i)
+			var book_pos := player.global_position + Vector2(cos(angle), sin(angle)) * area
+			for enemy in SpatialGrid.get_in_range(book_pos, 28.0):
+				enemy.take_damage(dmg * DMG_INTERVAL * 2.0)
 
 	if _shield_hp < SHIELD_MAX:
 		_shield_hp = minf(_shield_hp + delta * 5.0, SHIELD_MAX)
 
 	var shield_area := area * 0.7
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if player.global_position.distance_squared_to(enemy.global_position) < shield_area * shield_area:
-			if enemy.has_method("apply_knockback"):
-				var push_dir: Vector2 = (enemy.global_position - player.global_position).normalized()
-				enemy.apply_knockback(push_dir * 150.0)
+	for enemy in SpatialGrid.get_in_range(player.global_position, shield_area):
+		if enemy.has_method("apply_knockback"):
+			var push_dir: Vector2 = (enemy.global_position - player.global_position).normalized()
+			enemy.apply_knockback(push_dir * 150.0)
 
 	queue_redraw()
 

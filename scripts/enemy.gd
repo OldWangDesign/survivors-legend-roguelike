@@ -35,6 +35,7 @@ const ELITE_AURA_COLORS: Dictionary = {
 
 func _ready() -> void:
 	add_to_group("enemies")
+	SpatialGrid.register(self)
 
 
 func setup(type_key: String, difficulty_mult: float = 1.0) -> void:
@@ -128,6 +129,7 @@ func _physics_process(delta: float) -> void:
 		move_dir = (player.global_position - global_position).normalized()
 
 	position += move_dir * move_speed * delta
+	SpatialGrid.update_position(self)
 
 	if _slow_timer > 0:
 		_slow_timer -= delta
@@ -163,7 +165,8 @@ func _physics_process(delta: float) -> void:
 	if elite_type != "":
 		_elite_aura_timer += delta
 
-	queue_redraw()
+	if _flash_timer > 0 or elite_type != "" or health < max_health:
+		queue_redraw()
 
 
 func _draw() -> void:
@@ -228,6 +231,7 @@ func apply_knockback(force: Vector2) -> void:
 
 func _die() -> void:
 	_dying = true
+	SpatialGrid.unregister(self)
 	remove_from_group("enemies")
 	GameData.total_kills += 1
 	if enemy_type == "boss":

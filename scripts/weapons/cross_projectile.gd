@@ -61,7 +61,7 @@ func _physics_process(delta: float) -> void:
 		_hit_cooldown.erase(k)
 
 	var hit_r_sq := 22.0 * 22.0
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in SpatialGrid.get_nearby(global_position, 22.0):
 		var eid: int = enemy.get_instance_id()
 		if _hit_cooldown.has(eid):
 			continue

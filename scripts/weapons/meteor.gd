@@ -11,7 +11,7 @@ func attack() -> void:
 		start_cooldown()
 		return
 
-	var enemies := get_tree().get_nodes_in_group("enemies")
+	var enemies := SpatialGrid.get_nearby(player.global_position, 500.0)
 	if enemies.is_empty():
 		start_cooldown()
 		return

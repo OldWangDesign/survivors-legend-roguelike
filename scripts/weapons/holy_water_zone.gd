@@ -40,10 +40,8 @@ func _process(delta: float) -> void:
 
 
 func _deal_damage() -> void:
-	var r_sq := area_radius * area_radius
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if global_position.distance_squared_to(enemy.global_position) < r_sq:
-			enemy.take_damage(damage)
+	for enemy in SpatialGrid.get_in_range(global_position, area_radius):
+		enemy.take_damage(damage)
 
 
 func _draw() -> void:

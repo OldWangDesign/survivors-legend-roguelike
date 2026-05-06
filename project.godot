@@ -24,6 +24,7 @@ boot_splash/use_filter=true
 GameData="*res://scripts/game_data.gd"
 AudioManager="*res://scripts/audio_manager.gd"
 VfxPool="*res://scripts/vfx_pool.gd"
+SpatialGrid="*res://scripts/spatial_grid.gd"
 
 [display]
 

@@ -54,9 +54,7 @@ func _tick_effect(player: Node2D) -> void:
 	var dmg := get_damage()
 	var total_healed := 0.0
 
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if player.global_position.distance_squared_to(enemy.global_position) > radius * radius:
-			continue
+	for enemy in SpatialGrid.get_in_range(player.global_position, radius):
 		enemy.take_damage(dmg)
 		total_healed += dmg * HEAL_RATIO
 		if _drain_particles.size() < 25:

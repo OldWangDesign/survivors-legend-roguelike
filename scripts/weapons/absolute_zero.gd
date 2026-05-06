@@ -21,13 +21,12 @@ func attack() -> void:
 	var freeze_dur := 2.0 + weapon_level * 0.3
 	_frozen_enemies.clear()
 
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if player.global_position.distance_squared_to(enemy.global_position) < area * area:
-			enemy.take_damage(dmg)
-			spawn_damage_number(enemy.global_position, dmg)
-			if enemy.has_method("apply_slow"):
-				enemy.apply_slow(0.0, freeze_dur)
-			_frozen_enemies.append(weakref(enemy))
+	for enemy in SpatialGrid.get_in_range(player.global_position, area):
+		enemy.take_damage(dmg)
+		spawn_damage_number(enemy.global_position, dmg)
+		if enemy.has_method("apply_slow"):
+			enemy.apply_slow(0.0, freeze_dur)
+		_frozen_enemies.append(weakref(enemy))
 
 	_pulse_phase = 1.0
 	play_weapon_sound("weapon_freeze")

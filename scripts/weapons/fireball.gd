@@ -45,11 +45,9 @@ func _on_proj_exit(proj: Node2D) -> void:
 
 
 func _explode(pos: Vector2, radius: float, dmg: int) -> void:
-	var r_sq := radius * radius
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if pos.distance_squared_to(enemy.global_position) < r_sq:
-			enemy.take_damage(dmg)
-			spawn_damage_number(enemy.global_position, dmg)
+	for enemy in SpatialGrid.get_in_range(pos, radius):
+		enemy.take_damage(dmg)
+		spawn_damage_number(enemy.global_position, dmg)
 
 	var fx := Node2D.new()
 	fx.set_script(preload("res://scripts/weapons/fireball_explosion.gd"))

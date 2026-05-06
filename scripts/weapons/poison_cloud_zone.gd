@@ -52,11 +52,9 @@ func _process(delta: float) -> void:
 
 
 func _tick_damage() -> void:
-	var r_sq := radius * radius
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if global_position.distance_squared_to(enemy.global_position) < r_sq:
-			enemy.take_damage(damage)
-			enemy.apply_slow(0.7, 0.6)
+	for enemy in SpatialGrid.get_in_range(global_position, radius):
+		enemy.take_damage(damage)
+		enemy.apply_slow(0.7, 0.6)
 
 
 func _draw() -> void:

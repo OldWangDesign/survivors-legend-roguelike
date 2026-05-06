@@ -48,10 +48,8 @@ func _process(delta: float) -> void:
 	var dmg := get_damage()
 	var knockback_strength := 80.0
 
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in SpatialGrid.get_in_range(player.global_position, radius):
 		var diff: Vector2 = enemy.global_position - player.global_position
-		if diff.length_squared() > radius * radius:
-			continue
 		enemy.take_damage(dmg * delta * 2.0)
 		enemy.apply_knockback(diff.normalized() * knockback_strength * delta)
 		_hit_flash_timer = 0.12

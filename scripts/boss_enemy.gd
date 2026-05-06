@@ -35,6 +35,7 @@ var _undying_triggered: bool = false
 func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("bosses")
+	SpatialGrid.register(self)
 
 
 func setup_boss(id: String, difficulty_mult: float = 1.0) -> void:
@@ -101,6 +102,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			var t: float = 1.0 - (_enter_timer / 2.0)
 			global_position = _enter_start_pos.lerp(_enter_target_pos, t)
+			SpatialGrid.update_position(self)
 			queue_redraw()
 			return
 
@@ -110,6 +112,7 @@ func _physics_process(delta: float) -> void:
 
 	var dir := (player.global_position - global_position).normalized()
 	position += dir * speed * _slow_mult * delta
+	SpatialGrid.update_position(self)
 
 	if is_instance_valid(_sprite):
 		_sprite.flip_h = dir.x < -0.1
@@ -371,6 +374,7 @@ func apply_knockback(_force: Vector2) -> void:
 
 func _die() -> void:
 	_dying = true
+	SpatialGrid.unregister(self)
 	remove_from_group("enemies")
 	remove_from_group("bosses")
 	GameData.total_kills += 1

@@ -44,7 +44,7 @@ func _physics_process(delta: float) -> void:
 		_hit_enemies.erase(k)
 
 	var hit_r_sq := 18.0 * 18.0
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in SpatialGrid.get_nearby(global_position, 18.0):
 		var eid: int = enemy.get_instance_id()
 		if _hit_enemies.has(eid):
 			continue

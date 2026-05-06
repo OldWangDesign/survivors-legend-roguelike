@@ -48,12 +48,10 @@ func _process(delta: float) -> void:
 
 
 func _impact() -> void:
-	var r_sq := _radius * _radius
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if _target.distance_squared_to(enemy.global_position) < r_sq:
-			enemy.take_damage(_damage)
-			if _weapon_ref:
-				_weapon_ref.spawn_damage_number(enemy.global_position, _damage)
+	for enemy in SpatialGrid.get_in_range(_target, _radius):
+		enemy.take_damage(_damage)
+		if _weapon_ref:
+			_weapon_ref.spawn_damage_number(enemy.global_position, _damage)
 	VfxPool.ring_wave(_target, Color(1.0, 0.5, 0.0), _radius * 1.5, 0.4, 4.0)
 	VfxPool.spark_burst(_target, 16, Color(1.0, 0.3, 0.0), _radius, 0.5)
 

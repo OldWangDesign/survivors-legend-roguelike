@@ -13,12 +13,12 @@ func attack() -> void:
 		start_cooldown()
 		return
 
-	var enemies := get_tree().get_nodes_in_group("enemies")
+	var enemies := SpatialGrid.get_nearby(player.global_position, 500.0)
 	if enemies.is_empty():
 		start_cooldown()
 		return
 
-	var first := enemies[randi() % enemies.size()]
+	var first: Node2D = enemies[randi() % enemies.size()]
 	var chain_count := 3 + weapon_level
 	var dmg := get_damage()
 	var hit: Array = []
@@ -33,7 +33,7 @@ func attack() -> void:
 
 		var next: Node2D = null
 		var best_dist := CHAIN_RANGE * CHAIN_RANGE
-		for e in get_tree().get_nodes_in_group("enemies"):
+		for e in SpatialGrid.get_nearby(current.global_position, CHAIN_RANGE):
 			if e in hit or not is_instance_valid(e):
 				continue
 			var d := current.global_position.distance_squared_to(e.global_position)

@@ -3,7 +3,9 @@ extends WeaponBase
 var _blade_angle: float = 0.0
 var _prev_angles: Array[float] = []
 var _time: float = 0.0
+var _dmg_tick: float = 0.0
 const AFTERIMAGE_COUNT := 3
+const DMG_INTERVAL := 0.1
 
 
 func _ready() -> void:
@@ -31,14 +33,15 @@ func _process(delta: float) -> void:
 		_blade_angle -= TAU
 
 	var dmg := get_damage()
-	var hit_r_sq := 24.0 * 24.0
 
-	for i in range(blade_count):
-		var angle := _blade_angle + (TAU / blade_count) * i
-		var blade_pos := player.global_position + Vector2(cos(angle), sin(angle)) * radius
-		for enemy in get_tree().get_nodes_in_group("enemies"):
-			if blade_pos.distance_squared_to(enemy.global_position) < hit_r_sq:
-				enemy.take_damage(dmg * delta)
+	_dmg_tick += delta
+	if _dmg_tick >= DMG_INTERVAL:
+		_dmg_tick -= DMG_INTERVAL
+		for i in range(blade_count):
+			var angle := _blade_angle + (TAU / blade_count) * i
+			var blade_pos := player.global_position + Vector2(cos(angle), sin(angle)) * radius
+			for enemy in SpatialGrid.get_in_range(blade_pos, 24.0):
+				enemy.take_damage(dmg * DMG_INTERVAL)
 	queue_redraw()
 
 

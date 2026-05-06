@@ -279,7 +279,10 @@ func _check_enemy_contact() -> void:
 	if not is_instance_valid(player) or player.invincible or _god_mode:
 		return
 	var ppos := player.global_position
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	var max_contact: float = player.hit_radius + 30.0
+	for enemy in SpatialGrid.get_nearby(ppos, max_contact):
+		if not is_instance_valid(enemy):
+			continue
 		var contact_dist: float = player.hit_radius + enemy.enemy_size
 		if ppos.distance_squared_to(enemy.global_position) < contact_dist * contact_dist:
 			player.take_damage(enemy.damage)

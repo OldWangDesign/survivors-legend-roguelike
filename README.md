@@ -76,49 +76,49 @@ scripts/
   sprite_loader.gd             # 精灵加载器
   vfx_pool.gd                  # 特效对象池
   weapons/
-    weapon_base.gd             # 武器基类
-    whip.gd                    # 鞭子
-    magic_wand.gd              # 魔杖
-    knife.gd                   # 飞刀
-    garlic.gd                  # 大蒜
-    holy_water.gd              # 圣水
-    fireball.gd                # 火球术
-    lightning.gd               # 闪电链
-    cross.gd                   # 十字架
-    spin_blade.gd              # 旋风斩
-    bible.gd                   # 圣经
-    freeze_ray.gd              # 冰冻射线
-    poison_cloud.gd            # 毒雾
-    shield.gd                  # 护盾
-    meteor.gd                  # 陨石
-    lifesteal_aura.gd          # 吸血光环
-    inferno_storm.gd           # 超武：炼狱风暴
-    absolute_zero.gd           # 超武：绝对零度
-    death_scythe.gd            # 超武：死神之镰
-    thor_hammer.gd             # 超武：雷神之锤
-    plague_king.gd             # 超武：瘟疫之王
-    divine_apocalypse.gd       # 超武：天启圣光
-    void_devour.gd             # 超武：虚空吞噬
+	weapon_base.gd             # 武器基类
+	whip.gd                    # 鞭子
+	magic_wand.gd              # 魔杖
+	knife.gd                   # 飞刀
+	garlic.gd                  # 大蒜
+	holy_water.gd              # 圣水
+	fireball.gd                # 火球术
+	lightning.gd               # 闪电链
+	cross.gd                   # 十字架
+	spin_blade.gd              # 旋风斩
+	bible.gd                   # 圣经
+	freeze_ray.gd              # 冰冻射线
+	poison_cloud.gd            # 毒雾
+	shield.gd                  # 护盾
+	meteor.gd                  # 陨石
+	lifesteal_aura.gd          # 吸血光环
+	inferno_storm.gd           # 超武：炼狱风暴
+	absolute_zero.gd           # 超武：绝对零度
+	death_scythe.gd            # 超武：死神之镰
+	thor_hammer.gd             # 超武：雷神之锤
+	plague_king.gd             # 超武：瘟疫之王
+	divine_apocalypse.gd       # 超武：天启圣光
+	void_devour.gd             # 超武：虚空吞噬
   ui/
-    main_menu.gd               # 主菜单
-    char_select.gd             # 角色选择界面
-    stage_select.gd            # 关卡选择
-    hud.gd                     # 游戏内 HUD
-    level_up_panel.gd          # 升级选择面板
-    game_over_screen.gd        # 结算画面
-    pause_menu.gd              # 暂停菜单
-    stats_panel.gd             # 属性详情面板
-    debug_panel.gd             # 调试面板
-    menu_bg.gd                 # 菜单背景
-    virtual_joystick.gd        # 虚拟摇杆
+	main_menu.gd               # 主菜单
+	char_select.gd             # 角色选择界面
+	stage_select.gd            # 关卡选择
+	hud.gd                     # 游戏内 HUD
+	level_up_panel.gd          # 升级选择面板
+	game_over_screen.gd        # 结算画面
+	pause_menu.gd              # 暂停菜单
+	stats_panel.gd             # 属性详情面板
+	debug_panel.gd             # 调试面板
+	menu_bg.gd                 # 菜单背景
+	virtual_joystick.gd        # 虚拟摇杆
   vfx/
-    hit_flash.gd               # 受击闪白
-    flash_rect.gd              # 全屏闪光
-    float_text.gd              # 浮动文字
-    ring_wave.gd               # 冲击波
-    spark.gd                   # 火花粒子
-    trail.gd                   # 拖尾效果
-    line_attack.gd             # 线性攻击特效
+	hit_flash.gd               # 受击闪白
+	flash_rect.gd              # 全屏闪光
+	float_text.gd              # 浮动文字
+	ring_wave.gd               # 冲击波
+	spark.gd                   # 火花粒子
+	trail.gd                   # 拖尾效果
+	line_attack.gd             # 线性攻击特效
 assets/
   sprites/                     # 角色/敌人/道具精灵（9 种风格）
   bg/                          # 地图背景瓦片（5 种地形）

@@ -49,10 +49,8 @@ func _process(delta: float) -> void:
 
 func _explode() -> void:
 	_exploded = true
-	var r_sq := _radius * _radius
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if _target.distance_squared_to(enemy.global_position) < r_sq:
-			enemy.take_damage(_damage)
+	for enemy in SpatialGrid.get_in_range(_target, _radius):
+		enemy.take_damage(_damage)
 	VfxPool.screen_flash(Color(1, 0.4, 0.1, 0.25), 0.1)
 	VfxPool.ring_wave(global_position, Color(1, 0.4, 0.1), _radius * 2.5, 0.5, 5.0)
 	VfxPool.spark_burst(global_position, 20, Color(1, 0.6, 0.2), 200.0, 0.5)

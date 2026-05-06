@@ -42,7 +42,7 @@ func _process(delta: float) -> void:
 		_trail.resize(TRAIL_LEN)
 
 	var hit_r_sq := 20.0 * 20.0
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in SpatialGrid.get_nearby(global_position, 20.0):
 		if enemy in _hit_enemies:
 			continue
 		if global_position.distance_squared_to(enemy.global_position) < hit_r_sq:
@@ -64,13 +64,12 @@ func _process(delta: float) -> void:
 
 func _explode() -> void:
 	var half_dmg := int(_damage * 0.5)
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in SpatialGrid.get_in_range(global_position, EXPLOSION_RADIUS):
 		if enemy in _hit_enemies:
 			continue
-		if global_position.distance_squared_to(enemy.global_position) < EXPLOSION_RADIUS * EXPLOSION_RADIUS:
-			enemy.take_damage(half_dmg)
-			if _weapon_ref:
-				_weapon_ref.spawn_damage_number(enemy.global_position, half_dmg)
+		enemy.take_damage(half_dmg)
+		if _weapon_ref:
+			_weapon_ref.spawn_damage_number(enemy.global_position, half_dmg)
 
 	VfxPool.ring_wave(global_position, Color(0.5, 0.0, 0.7), EXPLOSION_RADIUS, 0.4, 4.0)
 	VfxPool.spark_burst(global_position, 12, Color(0.6, 0.1, 0.9), EXPLOSION_RADIUS * 0.8, 0.4)
@@ -82,7 +81,7 @@ func _explode() -> void:
 func _chain_to_nearby() -> void:
 	var chain_count := 2
 	var chained := 0
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	for enemy in SpatialGrid.get_nearby(global_position, CHAIN_RANGE):
 		if chained >= chain_count:
 			break
 		if enemy in _hit_enemies:

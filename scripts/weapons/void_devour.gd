@@ -13,7 +13,7 @@ func attack() -> void:
 		return
 
 	var count := 8
-	var enemies := get_tree().get_nodes_in_group("enemies")
+	var enemies := SpatialGrid.get_nearby(player.global_position, 500.0)
 
 	for i in range(count):
 		var target: Node2D = null

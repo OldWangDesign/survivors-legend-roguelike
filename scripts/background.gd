@@ -1,9 +1,11 @@
 extends Node2D
 
 const TILE := 32
+const REDRAW_THRESHOLD := 16.0
 
 var _tiles: Array[ImageTexture] = []
 var _current_style: String = ""
+var _last_cam_pos: Vector2 = Vector2.INF
 
 
 func _ready() -> void:
@@ -35,7 +37,13 @@ func load_style(style: String) -> void:
 
 
 func _process(_delta: float) -> void:
-	queue_redraw()
+	var cam := get_viewport().get_camera_2d()
+	if not cam:
+		return
+	var cam_pos := cam.global_position
+	if _last_cam_pos.distance_squared_to(cam_pos) > REDRAW_THRESHOLD * REDRAW_THRESHOLD:
+		_last_cam_pos = cam_pos
+		queue_redraw()
 
 
 func _draw() -> void:
