@@ -65,7 +65,9 @@ func get_nearby(pos: Vector2, radius: float) -> Array:
 		for dy in range(-cells_needed, cells_needed + 1):
 			var key := (cc.x + dx) * 73856093 + (cc.y + dy) * 19349663
 			if _grid.has(key):
-				result.append_array(_grid[key])
+				for entity in _grid[key]:
+					if is_instance_valid(entity):
+						result.append(entity)
 	return result
 
 

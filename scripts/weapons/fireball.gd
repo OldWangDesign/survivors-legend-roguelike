@@ -39,9 +39,10 @@ func _fire(pos: Vector2, dir: Vector2) -> void:
 func _on_proj_exit(proj: Node2D) -> void:
 	if not is_instance_valid(proj):
 		return
+	var pos := proj.global_position
 	var radius: float = proj.get_meta("explode_radius", 60.0)
 	var dmg: int = proj.get_meta("explode_damage", get_damage())
-	_explode(proj.global_position, radius, dmg)
+	call_deferred("_explode", pos, radius, dmg)
 
 
 func _explode(pos: Vector2, radius: float, dmg: int) -> void:

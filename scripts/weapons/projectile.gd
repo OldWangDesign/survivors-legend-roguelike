@@ -50,6 +50,8 @@ func _physics_process(delta: float) -> void:
 	var hit_r := radius + 12.0
 	var hit_r_sq := hit_r * hit_r
 	for enemy in SpatialGrid.get_nearby(global_position, hit_r):
+		if not is_instance_valid(enemy):
+			continue
 		if enemy in _hit_enemies:
 			continue
 		if global_position.distance_squared_to(enemy.global_position) < hit_r_sq:
