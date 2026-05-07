@@ -11,7 +11,6 @@ var _hit_enemies: Array = []
 var _sprite: Sprite2D
 var _trail_positions: Array[Vector2] = []
 var _time: float = 0.0
-const TRAIL_LENGTH := 14
 
 
 func setup(dir: Vector2, spd: float, dmg: int, life: float, col: Color, rad: float, pierce: bool = false) -> void:
@@ -44,8 +43,9 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_trail_positions.push_front(global_position)
-	if _trail_positions.size() > TRAIL_LENGTH:
-		_trail_positions.resize(TRAIL_LENGTH)
+	var trail_length: int = GameData.get_projectile_trail_length()
+	if _trail_positions.size() > trail_length:
+		_trail_positions.resize(trail_length)
 
 	var hit_r := radius + 12.0
 	var hit_r_sq := hit_r * hit_r
@@ -60,8 +60,9 @@ func _physics_process(delta: float) -> void:
 			if piercing:
 				_hit_enemies.append(enemy)
 			else:
-				VfxPool.spark_burst(global_position, 8, color, 80.0, 0.25)
-				VfxPool.ring_wave(global_position, color, 25.0, 0.15, 2.0)
+				VfxPool.spark_burst(global_position, 5 if GameData.is_low_fx_mode() else 8, color, 80.0, 0.25)
+				if not GameData.is_low_fx_mode():
+					VfxPool.ring_wave(global_position, color, 25.0, 0.15, 2.0)
 				queue_free()
 				return
 	queue_redraw()
@@ -72,14 +73,16 @@ func _draw() -> void:
 		var t := 1.0 - float(i) / float(_trail_positions.size())
 		var from := _trail_positions[i] - global_position
 		var to := _trail_positions[i + 1] - global_position
-		draw_line(from, to, Color(color, t * 0.08), radius * 4.0 * t)
-		draw_line(from, to, Color(color, t * 0.25), radius * 1.8 * t)
-		draw_line(from, to, Color(1, 1, 1, t * 0.4), radius * 0.6 * t)
+		if not GameData.is_low_fx_mode():
+			draw_line(from, to, Color(color, t * 0.08), radius * 4.0 * t)
+			draw_line(from, to, Color(color, t * 0.25), radius * 1.8 * t)
+		draw_line(from, to, Color(1, 1, 1, t * 0.35), radius * 0.6 * t)
 
 	var pulse := sin(_time * 15.0) * 0.25 + 0.75
 	var core_r := radius * 1.2
-	draw_circle(Vector2.ZERO, core_r * 2.5 * pulse, Color(color, 0.08))
-	draw_circle(Vector2.ZERO, core_r * 1.8 * pulse, Color(color, 0.18))
+	if not GameData.is_low_fx_mode():
+		draw_circle(Vector2.ZERO, core_r * 2.5 * pulse, Color(color, 0.08))
+		draw_circle(Vector2.ZERO, core_r * 1.8 * pulse, Color(color, 0.18))
 	draw_circle(Vector2.ZERO, core_r * 1.2, Color(color, 0.35))
 	draw_circle(Vector2.ZERO, core_r * 0.7, Color(color.lightened(0.5), 0.6))
 	draw_circle(Vector2.ZERO, core_r * 0.3, Color(1, 1, 1, 0.8))

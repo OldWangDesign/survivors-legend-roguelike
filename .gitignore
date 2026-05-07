@@ -16,5 +16,8 @@ export_presets.cfg
 # IDE
 .vscode/
 
+# Claude
+.claude/
+
 # Godot UID files (auto-generated)
 *.uid

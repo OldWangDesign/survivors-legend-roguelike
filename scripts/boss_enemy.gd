@@ -398,13 +398,14 @@ func _die() -> void:
 
 
 func _spawn_boss_loot() -> void:
-	for i in range(8):
+	var gem_count := 3
+	for i in range(gem_count):
 		var gem_script := preload("res://scripts/experience_gem.gd")
 		var gem := Node2D.new()
 		gem.set_script(gem_script)
-		var angle: float = TAU * float(i) / 8.0
-		gem.global_position = global_position + Vector2(cos(angle), sin(angle)) * 30.0
-		gem.xp_value = int(float(xp_value) / 8.0)
+		var angle: float = TAU * float(i) / float(gem_count)
+		gem.global_position = global_position + Vector2(cos(angle), sin(angle)) * 34.0
+		gem.xp_value = maxi(20, int(ceil(float(xp_value) / float(gem_count))))
 		var pickup_container := GameData.pickups_container
 		if pickup_container and is_instance_valid(pickup_container):
 			pickup_container.add_child(gem)
@@ -422,3 +423,7 @@ func _spawn_boss_loot() -> void:
 	if loot_container and is_instance_valid(loot_container):
 		loot_container.add_child(chest)
 		AudioManager.play("chest_spawn")
+	VfxPool.float_text(global_position + Vector2(0, -enemy_size * 2.0), "Boss奖励: 大量经验 + 宝箱", GameData.UI_GOLD, 18.0, true)
+	for hud in get_tree().get_nodes_in_group("hud"):
+		if hud.has_method("show_reward_notice"):
+			hud.show_reward_notice("Boss奖励: 大量经验 + 宝箱", GameData.UI_GOLD, 2.2)

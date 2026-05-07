@@ -36,6 +36,7 @@ var consumed_weapons: Array = []
 var _sprite: Sprite2D
 var _anim_frame: int = 0
 var _anim_timer: float = 0.0
+var _visual_scale: float = 1.0
 
 # Character & Passive state
 var _char_id: String = ""
@@ -76,7 +77,8 @@ func _ready() -> void:
 	var frames: Array = GameData.sprites.get("player", [])
 	if frames.size() > 0:
 		_sprite.texture = frames[0]
-	_sprite.scale = Vector2(hit_radius * 2.0 / 16.0, hit_radius * 2.0 / 16.0)
+	_visual_scale = GameData.get_player_visual_scale()
+	_sprite.scale = Vector2.ONE * (hit_radius * 2.0 / 16.0) * _visual_scale
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_sprite)
 
@@ -183,6 +185,9 @@ func _physics_process(delta: float) -> void:
 
 func _draw() -> void:
 	draw_circle(Vector2(2, 3), hit_radius * 0.7, Color(0, 0, 0, 0.2))
+	var marker_radius := hit_radius * _visual_scale * 1.15
+	draw_circle(Vector2.ZERO, marker_radius, Color(0.2, 0.65, 1.0, GameData.PLAYER_MARKER_ALPHA * 0.35))
+	draw_arc(Vector2.ZERO, marker_radius, 0.0, TAU, 32, Color(0.35, 0.85, 1.0, GameData.PLAYER_MARKER_ALPHA), 2.0)
 
 	# Health bar above head (same style as enemies)
 	var bar_w := hit_radius * 2.5

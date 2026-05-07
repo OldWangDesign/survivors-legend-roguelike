@@ -23,6 +23,8 @@ var debug_panel: Control = null
 var pause_menu: Control = null
 var _chest_timer: float = 0.0
 var _next_chest_interval: float = 30.0
+var _world_event_timer: float = 0.0
+var _next_world_event_interval: float = 32.0
 
 var _stage_data: Dictionary = {}
 
@@ -237,6 +239,8 @@ func _physics_process(delta: float) -> void:
 		_next_chest_interval = randf_range(GameData.CHEST_SPAWN_INTERVAL_MIN, GameData.CHEST_SPAWN_INTERVAL_MAX)
 		_spawn_random_chest()
 
+	_update_world_events(delta)
+
 
 func _check_stage_conditions() -> void:
 	var cond: String = _stage_data.get("win_condition", "survive")
@@ -312,6 +316,46 @@ func _spawn_random_chest() -> void:
 	if pickups_container and is_instance_valid(pickups_container):
 		pickups_container.add_child(chest)
 		AudioManager.play("chest_spawn")
+
+
+func _update_world_events(delta: float) -> void:
+	if not is_instance_valid(player):
+		return
+	if elapsed_time < 25.0:
+		return
+	_world_event_timer += delta
+	if _world_event_timer < _next_world_event_interval:
+		return
+	_world_event_timer = 0.0
+	_next_world_event_interval = randf_range(GameData.WORLD_EVENT_INTERVAL_MIN, GameData.WORLD_EVENT_INTERVAL_MAX)
+	if GameData.is_mobile():
+		_next_world_event_interval += 12.0
+
+	var roll := randf()
+	if roll < 0.65:
+		_spawn_danger_zone()
+	else:
+		_spawn_healing_point()
+
+
+func _get_world_event_position(min_dist: float, max_dist: float) -> Vector2:
+	var angle := randf() * TAU
+	var dist := randf_range(min_dist, max_dist)
+	return player.global_position + Vector2(cos(angle), sin(angle)) * dist
+
+
+func _spawn_danger_zone() -> void:
+	var zone := Node2D.new()
+	zone.set_script(preload("res://scripts/world/danger_zone.gd"))
+	zone.global_position = _get_world_event_position(170.0, 420.0)
+	add_child(zone)
+
+
+func _spawn_healing_point() -> void:
+	var point := Node2D.new()
+	point.set_script(preload("res://scripts/world/healing_point.gd"))
+	point.global_position = _get_world_event_position(120.0, 320.0)
+	add_child(point)
 
 
 func _on_player_leveled_up(_new_level: int) -> void:

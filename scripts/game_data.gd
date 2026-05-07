@@ -348,6 +348,29 @@ const CHEST_SPAWN_INTERVAL_MIN := 25.0
 const CHEST_SPAWN_INTERVAL_MAX := 50.0
 const CHEST_SPAWN_DISTANCE := 350.0
 
+# Visual clarity and performance knobs. Mobile defaults to a cleaner, cheaper profile.
+const PLAYER_VISUAL_SCALE := 1.28
+const PLAYER_VISUAL_SCALE_MOBILE := 1.35
+const PLAYER_MARKER_ALPHA := 0.38
+const ENEMY_CAP_DEFAULT := 240
+const ENEMY_CAP_MOBILE := 150
+const VFX_PARTICLE_BUDGET_DEFAULT := 180
+const VFX_PARTICLE_BUDGET_MOBILE := 80
+const FLOAT_TEXT_CAP_DEFAULT := 48
+const FLOAT_TEXT_CAP_MOBILE := 18
+const FLOAT_TEXT_PER_SECOND_DEFAULT := 60
+const FLOAT_TEXT_PER_SECOND_MOBILE := 18
+const PROJECTILE_TRAIL_LENGTH_DEFAULT := 8
+const PROJECTILE_TRAIL_LENGTH_MOBILE := 3
+const SPAWN_RATE_SCALE_DEFAULT := 0.88
+const SPAWN_RATE_SCALE_MOBILE := 0.62
+const SWARM_COUNT_SCALE_DEFAULT := 0.78
+const SWARM_COUNT_SCALE_MOBILE := 0.55
+const FORMATION_COUNT_SCALE_DEFAULT := 0.82
+const FORMATION_COUNT_SCALE_MOBILE := 0.58
+const WORLD_EVENT_INTERVAL_MIN := 28.0
+const WORLD_EVENT_INTERVAL_MAX := 42.0
+
 var player_ref: CharacterBody2D = null
 var enemies_container: Node2D = null
 var pickups_container: Node2D = null
@@ -447,6 +470,50 @@ func switch_style(style: String) -> void:
 
 func is_mobile() -> bool:
 	return OS.get_name() in ["Android", "iOS"]
+
+
+func is_low_fx_mode() -> bool:
+	return is_mobile()
+
+
+func get_player_visual_scale() -> float:
+	return PLAYER_VISUAL_SCALE_MOBILE if is_mobile() else PLAYER_VISUAL_SCALE
+
+
+func get_enemy_cap() -> int:
+	return ENEMY_CAP_MOBILE if is_mobile() else ENEMY_CAP_DEFAULT
+
+
+func get_vfx_particle_budget() -> int:
+	return VFX_PARTICLE_BUDGET_MOBILE if is_low_fx_mode() else VFX_PARTICLE_BUDGET_DEFAULT
+
+
+func get_float_text_cap() -> int:
+	return FLOAT_TEXT_CAP_MOBILE if is_low_fx_mode() else FLOAT_TEXT_CAP_DEFAULT
+
+
+func get_float_text_per_second() -> int:
+	return FLOAT_TEXT_PER_SECOND_MOBILE if is_low_fx_mode() else FLOAT_TEXT_PER_SECOND_DEFAULT
+
+
+func get_projectile_trail_length() -> int:
+	return PROJECTILE_TRAIL_LENGTH_MOBILE if is_low_fx_mode() else PROJECTILE_TRAIL_LENGTH_DEFAULT
+
+
+func get_spawn_rate_scale() -> float:
+	return SPAWN_RATE_SCALE_MOBILE if is_mobile() else SPAWN_RATE_SCALE_DEFAULT
+
+
+func get_swarm_count_scale() -> float:
+	return SWARM_COUNT_SCALE_MOBILE if is_mobile() else SWARM_COUNT_SCALE_DEFAULT
+
+
+func get_formation_count_scale() -> float:
+	return FORMATION_COUNT_SCALE_MOBILE if is_mobile() else FORMATION_COUNT_SCALE_DEFAULT
+
+
+func should_reduce_enemy_detail() -> bool:
+	return is_low_fx_mode() or get_tree().get_nodes_in_group("enemies").size() > 120
 
 
 func _setup_inputs() -> void:

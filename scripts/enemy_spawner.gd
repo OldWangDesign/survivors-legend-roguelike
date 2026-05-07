@@ -20,7 +20,6 @@ var _spiral_queue: Array = []
 var _spiral_spawn_timer: float = 0.0
 
 const SPAWN_DISTANCE := 800.0
-const MAX_ENEMIES := 300
 
 const BOSS_TIMES: Array = [300.0, 600.0, 900.0]
 const BOSS_IDS: Array = ["bone_lord", "shadow_lich", "blood_moon"]
@@ -75,19 +74,22 @@ func _get_phase(time: float) -> int:
 
 func _get_spawn_interval(time: float) -> float:
 	var phase := _get_phase(time)
+	var scale: float = GameData.get_spawn_rate_scale()
+	if not get_tree().get_nodes_in_group("bosses").is_empty():
+		scale *= 0.65
 	match phase:
-		Phase.TRIAL: return 1.0
-		Phase.GROWTH: return 0.6
-		Phase.PRESSURE: return 0.4
-		Phase.FRENZY: return 0.25
-		Phase.HELL: return 0.15
-		Phase.ENDGAME: return 0.10
+		Phase.TRIAL: return 1.0 / scale
+		Phase.GROWTH: return 0.6 / scale
+		Phase.PRESSURE: return 0.4 / scale
+		Phase.FRENZY: return 0.25 / scale
+		Phase.HELL: return 0.15 / scale
+		Phase.ENDGAME: return 0.10 / scale
 	return 0.5
 
 
 func _spawn_normal_wave(time: float) -> void:
 	var enemies := get_tree().get_nodes_in_group("enemies")
-	if enemies.size() >= MAX_ENEMIES:
+	if enemies.size() >= GameData.get_enemy_cap():
 		return
 
 	var player := GameData.player_ref
@@ -112,13 +114,14 @@ func _get_normal_formation_chance(time: float) -> float:
 
 func _get_spawn_count(time: float) -> int:
 	var phase := _get_phase(time)
+	var boss_scale := 0.55 if not get_tree().get_nodes_in_group("bosses").is_empty() else 1.0
 	match phase:
-		Phase.TRIAL: return randi_range(2, 3)
-		Phase.GROWTH: return randi_range(3, 5)
-		Phase.PRESSURE: return randi_range(4, 8)
-		Phase.FRENZY: return randi_range(6, 10)
-		Phase.HELL: return randi_range(8, 14)
-		Phase.ENDGAME: return randi_range(10, 18)
+		Phase.TRIAL: return maxi(1, int(float(randi_range(2, 3)) * boss_scale))
+		Phase.GROWTH: return maxi(1, int(float(randi_range(3, 5)) * boss_scale))
+		Phase.PRESSURE: return maxi(2, int(float(randi_range(4, 8)) * boss_scale))
+		Phase.FRENZY: return maxi(3, int(float(randi_range(6, 10)) * boss_scale))
+		Phase.HELL: return maxi(4, int(float(randi_range(8, 14)) * boss_scale))
+		Phase.ENDGAME: return maxi(5, int(float(randi_range(10, 18)) * boss_scale))
 	return 3
 
 
@@ -175,7 +178,7 @@ func _do_trigger_swarm(time: float) -> void:
 		return
 
 	var enemies := get_tree().get_nodes_in_group("enemies")
-	if enemies.size() >= MAX_ENEMIES:
+	if enemies.size() >= GameData.get_enemy_cap():
 		return
 
 	var difficulty := GameData.get_difficulty_multiplier(time)
@@ -187,6 +190,7 @@ func _do_trigger_swarm(time: float) -> void:
 		Phase.FRENZY: swarm_count = 24
 		Phase.HELL: swarm_count = 32
 		Phase.ENDGAME: swarm_count = 40
+	swarm_count = maxi(4, int(float(swarm_count) * GameData.get_swarm_count_scale()))
 
 	var use_formation := _should_use_formation(phase)
 	if use_formation:
@@ -247,7 +251,7 @@ func _update_formation_timer(delta: float, time: float) -> void:
 		if not is_instance_valid(player):
 			return
 		var enemies := get_tree().get_nodes_in_group("enemies")
-		if enemies.size() >= MAX_ENEMIES:
+		if enemies.size() >= GameData.get_enemy_cap():
 			return
 		var difficulty := GameData.get_difficulty_multiplier(time)
 		var available := _get_available_formations(phase)
@@ -259,13 +263,14 @@ func _update_formation_timer(delta: float, time: float) -> void:
 
 
 func _get_formation_count(phase: int) -> int:
+	var scale: float = GameData.get_formation_count_scale()
 	match phase:
-		Phase.TRIAL: return randi_range(12, 15)
-		Phase.GROWTH: return randi_range(15, 20)
-		Phase.PRESSURE: return randi_range(20, 25)
-		Phase.FRENZY: return randi_range(25, 30)
-		Phase.HELL: return randi_range(30, 40)
-		Phase.ENDGAME: return randi_range(35, 50)
+		Phase.TRIAL: return maxi(6, int(float(randi_range(12, 15)) * scale))
+		Phase.GROWTH: return maxi(8, int(float(randi_range(15, 20)) * scale))
+		Phase.PRESSURE: return maxi(10, int(float(randi_range(20, 25)) * scale))
+		Phase.FRENZY: return maxi(12, int(float(randi_range(25, 30)) * scale))
+		Phase.HELL: return maxi(14, int(float(randi_range(30, 40)) * scale))
+		Phase.ENDGAME: return maxi(16, int(float(randi_range(35, 50)) * scale))
 	return 12
 
 

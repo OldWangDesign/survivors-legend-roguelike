@@ -63,6 +63,7 @@ const PORTRAIT_SIZE := 36
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group("hud")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	theme = GameData.pixel_theme
@@ -745,7 +746,7 @@ func _get_objective_text() -> String:
 		"kills":
 			return "目标: 击杀 %d" % val
 		"survive":
-			var m: int = val / 60
+			var m: int = int(float(val) / 60.0)
 			var s: int = val % 60
 			return "目标: 存活 %02d:%02d" % [m, s]
 		"boss":
@@ -797,9 +798,9 @@ func _update_objective() -> void:
 			_obj_max = float(val)
 		"survive":
 			var current: float = minf(GameData.elapsed_time, float(val))
-			var cm: int = int(current) / 60
+			var cm: int = int(current / 60.0)
 			var cs: int = int(current) % 60
-			var tm: int = val / 60
+			var tm: int = int(float(val) / 60.0)
 			var ts: int = val % 60
 			_objective_label.text = "存活: %02d:%02d / %02d:%02d" % [cm, cs, tm, ts]
 			_obj_cur = current
@@ -849,7 +850,7 @@ func update_xp(current: int, needed: int, lvl: int) -> void:
 func update_time(elapsed: float) -> void:
 	if GameData.is_stage_mode():
 		var remaining: float = maxf(0.0, GameData.get_stage_data().get("duration", 0.0) - elapsed)
-		var minutes := int(remaining) / 60
+		var minutes := int(remaining / 60.0)
 		var seconds := int(remaining) % 60
 		_time_label.text = "%02d:%02d" % [minutes, seconds]
 		if remaining < 30.0:
@@ -857,7 +858,7 @@ func update_time(elapsed: float) -> void:
 		else:
 			_time_label.add_theme_color_override("font_color", GameData.UI_GOLD)
 	else:
-		var minutes := int(elapsed) / 60
+		var minutes := int(elapsed / 60.0)
 		var seconds := int(elapsed) % 60
 		_time_label.text = "%02d:%02d" % [minutes, seconds]
 
@@ -895,6 +896,13 @@ func show_boss_warning() -> void:
 	_warn_label.add_theme_color_override("font_color", Color(0.9, 0.1, 0.1))
 	_warn_label.visible = true
 	_warn_timer = 3.0
+
+
+func show_reward_notice(text: String, color: Color = Color.WHITE, duration: float = 2.0) -> void:
+	_warn_label.text = text
+	_warn_label.add_theme_color_override("font_color", color)
+	_warn_label.visible = true
+	_warn_timer = duration
 
 
 func _update_passive_indicator() -> void:

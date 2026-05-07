@@ -3,9 +3,11 @@ extends Node
 ## Lightweight VFX pool — reuses Node2D draw‐calls instead of instancing.
 ## All public helpers are static‐style: call VfxPool.xxx() from anywhere.
 
-const MAX_PARTICLES := 200
 var _particles: Array = []
 var _trail_nodes: Array = []
+var _float_texts: Array = []
+var _float_text_window_ms: int = 0
+var _float_text_count_in_window: int = 0
 
 
 func _get_scene() -> Node:
@@ -17,9 +19,12 @@ func _get_scene() -> Node:
 
 func _get_budget() -> int:
 	var enemies := get_tree().get_nodes_in_group("enemies").size()
+	var budget: int = GameData.get_vfx_particle_budget()
 	if enemies > 50:
-		return MAX_PARTICLES / 2
-	return MAX_PARTICLES
+		budget = int(float(budget) * 0.6)
+	if enemies > 120:
+		budget = int(float(budget) * 0.45)
+	return maxi(budget, 24)
 
 
 # ============ HIT FLASH (star burst at hit position) ============
@@ -44,17 +49,24 @@ func screen_flash(color: Color = Color(1, 1, 1, 0.3), duration: float = 0.08) ->
 	var scene := _get_scene()
 	if scene == null:
 		return
+	var flash_color := color
+	var flash_duration := duration
+	if GameData.is_low_fx_mode():
+		if flash_color.a < 0.12:
+			return
+		flash_color.a *= 0.55
+		flash_duration = minf(duration, 0.12)
 	var layer := CanvasLayer.new()
 	layer.layer = 100
 	layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	layer.set_meta("_flash_created_ms", Time.get_ticks_msec())
 	var rect := ColorRect.new()
 	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	rect.color = color
+	rect.color = flash_color
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(rect)
 	scene.add_child(layer)
-	get_tree().create_timer(duration, true).timeout.connect(
+	get_tree().create_timer(flash_duration, true).timeout.connect(
 		func() -> void:
 			if is_instance_valid(layer):
 				layer.queue_free()
@@ -68,7 +80,10 @@ func spark_burst(pos: Vector2, count: int, color: Color, spread: float = 80.0, l
 	if scene == null:
 		return
 	var budget := _get_budget()
-	for i in range(mini(count, budget - _particles.size())):
+	var fx_count := count
+	if GameData.is_low_fx_mode():
+		fx_count = maxi(1, int(float(count) * 0.45))
+	for i in range(mini(fx_count, budget - _particles.size())):
 		var fx := Node2D.new()
 		fx.set_script(_SparkScript)
 		fx.global_position = pos
@@ -107,6 +122,9 @@ func trail_attach(target: Node2D, color: Color, length: int = 8, width: float = 
 	var scene := _get_scene()
 	if scene == null:
 		return null
+	if GameData.is_low_fx_mode():
+		length = mini(length, 4)
+		width *= 0.65
 	var trail := Node2D.new()
 	trail.set_script(_TrailScript)
 	trail.set_meta("target", target)
@@ -144,6 +162,8 @@ func float_text(pos: Vector2, text: String, color: Color, size: float = 16.0, is
 	var scene := _get_scene()
 	if scene == null:
 		return
+	if not _can_spawn_float_text(is_crit):
+		return
 	var fx := Node2D.new()
 	fx.set_script(_FloatTextScript)
 	fx.global_position = pos + Vector2(randf_range(-8, 8), -12)
@@ -153,6 +173,7 @@ func float_text(pos: Vector2, text: String, color: Color, size: float = 16.0, is
 	fx.set_meta("is_crit", is_crit)
 	fx.z_index = 20
 	scene.add_child(fx)
+	_float_texts.append(fx)
 
 
 # ============ CLEANUP ============
@@ -168,7 +189,28 @@ func _process(_delta: float) -> void:
 		if is_instance_valid(t) and t.is_inside_tree():
 			valid_t.append(t)
 	_trail_nodes = valid_t
+	var valid_f: Array = []
+	for f in _float_texts:
+		if is_instance_valid(f) and f.is_inside_tree():
+			valid_f.append(f)
+	_float_texts = valid_f
 	_cleanup_stale_flash_layers()
+
+
+func _can_spawn_float_text(is_crit: bool) -> bool:
+	var now := Time.get_ticks_msec()
+	if now - _float_text_window_ms >= 1000:
+		_float_text_window_ms = now
+		_float_text_count_in_window = 0
+
+	var cap: int = GameData.get_float_text_cap()
+	var rate_cap: int = GameData.get_float_text_per_second()
+	if _float_texts.size() >= cap:
+		return false
+	if _float_text_count_in_window >= rate_cap and not is_crit:
+		return false
+	_float_text_count_in_window += 1
+	return true
 
 
 func _cleanup_stale_flash_layers() -> void:

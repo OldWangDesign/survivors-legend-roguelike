@@ -25,7 +25,6 @@ var _formation_timer: float = 0.0
 var _spiral_queue: Array = []
 
 const SPAWN_DISTANCE := 800.0
-const MAX_ENEMIES := 300
 const BASE_INTERVAL := 1.0
 const WAVE_INTERVAL := 25.0
 const WAVE_SWARM_COUNT := 10
@@ -70,7 +69,10 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var rate: float = _stage.get("spawn_rate", 1.0)
-	var interval: float = maxf(0.15, BASE_INTERVAL / rate)
+	var spawn_scale: float = GameData.get_spawn_rate_scale()
+	if not get_tree().get_nodes_in_group("bosses").is_empty():
+		spawn_scale *= 0.65
+	var interval: float = maxf(0.15, BASE_INTERVAL / (rate * spawn_scale))
 
 	_spawn_timer -= delta
 	if _spawn_timer <= 0:
@@ -86,7 +88,7 @@ func _physics_process(delta: float) -> void:
 
 func _spawn_wave(time: float) -> void:
 	var enemies: Array = get_tree().get_nodes_in_group("enemies")
-	if enemies.size() >= MAX_ENEMIES:
+	if enemies.size() >= GameData.get_enemy_cap():
 		return
 	var player := GameData.player_ref
 	if not is_instance_valid(player):
@@ -106,7 +108,10 @@ func _spawn_wave(time: float) -> void:
 func _get_spawn_count() -> int:
 	var rate: float = _stage.get("spawn_rate", 1.0)
 	var base: int = maxi(1, int(rate))
-	return randi_range(base, base + 2)
+	var count := randi_range(base, base + 2)
+	if not get_tree().get_nodes_in_group("bosses").is_empty():
+		count = maxi(1, int(float(count) * 0.55))
+	return count
 
 
 # ── Wave events with warning ──
@@ -144,7 +149,7 @@ func _do_trigger_swarm(time: float) -> void:
 		return
 
 	var enemies: Array = get_tree().get_nodes_in_group("enemies")
-	if enemies.size() >= MAX_ENEMIES:
+	if enemies.size() >= GameData.get_enemy_cap():
 		return
 
 	var difficulty: float = _stage.get("difficulty_mult", 1.0)
@@ -154,6 +159,7 @@ func _do_trigger_swarm(time: float) -> void:
 	var rate: float = _stage.get("spawn_rate", 1.0)
 	var count: int = int(WAVE_SWARM_COUNT * rate)
 	count = clampi(count, 6, 30)
+	count = maxi(4, int(float(count) * GameData.get_swarm_count_scale()))
 
 	var use_formation := _should_use_formation()
 	if use_formation:
@@ -212,7 +218,7 @@ func _update_formation_timer(delta: float, _time: float) -> void:
 		if not is_instance_valid(player):
 			return
 		var enemies: Array = get_tree().get_nodes_in_group("enemies")
-		if enemies.size() >= MAX_ENEMIES:
+		if enemies.size() >= GameData.get_enemy_cap():
 			return
 		var eff_diff: float = diff * (1.0 + GameData.elapsed_time / _stage.get("duration", 120.0) * 0.5)
 		var available := _get_available_formations()
@@ -224,14 +230,14 @@ func _update_formation_timer(delta: float, _time: float) -> void:
 
 
 func _get_stage_formation_count(diff: float) -> int:
+	var scale: float = GameData.get_formation_count_scale()
 	if diff < 1.0:
-		return randi_range(8, 12)
+		return maxi(5, int(float(randi_range(8, 12)) * scale))
 	elif diff < 1.3:
-		return randi_range(12, 18)
+		return maxi(7, int(float(randi_range(12, 18)) * scale))
 	elif diff < 1.8:
-		return randi_range(18, 25)
-	else:
-		return randi_range(25, 40)
+		return maxi(10, int(float(randi_range(18, 25)) * scale))
+	return maxi(12, int(float(randi_range(25, 40)) * scale))
 
 
 func _spawn_formation(formation: int, player_pos: Vector2, count: int, difficulty: float) -> void:

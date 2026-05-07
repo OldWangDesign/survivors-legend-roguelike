@@ -170,10 +170,16 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	if elite_type != "" and not _dying:
+	var reduce_detail: bool = GameData.should_reduce_enemy_detail()
+	var player := GameData.player_ref
+	var far_from_player := false
+	if is_instance_valid(player):
+		far_from_player = global_position.distance_squared_to(player.global_position) > 520.0 * 520.0
+
+	if elite_type != "" and not _dying and not (reduce_detail and far_from_player):
 		_draw_elite_aura()
 
-	if health < max_health and not _dying:
+	if health < max_health and not _dying and not (reduce_detail and elite_type == "" and far_from_player):
 		var bar_w := enemy_size * 2.0
 		var bar_h := 3.0
 		var bar_y := -enemy_size - 6.0
@@ -215,7 +221,8 @@ func take_damage(amount: float) -> void:
 	health -= effective_amount
 	_flash_timer = 0.08
 	AudioManager.play("enemy_hit")
-	VfxPool.hit_flash(global_position, color, 10.0 + amount * 0.3)
+	if not GameData.is_low_fx_mode() or elite_type != "" or amount >= 20:
+		VfxPool.hit_flash(global_position, color, 10.0 + amount * 0.3)
 	if health <= 0:
 		_die()
 

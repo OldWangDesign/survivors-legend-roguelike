@@ -41,7 +41,8 @@ func _process(_delta: float) -> void:
 	if not cam:
 		return
 	var cam_pos := cam.global_position
-	if _last_cam_pos.distance_squared_to(cam_pos) > REDRAW_THRESHOLD * REDRAW_THRESHOLD:
+	var redraw_threshold := REDRAW_THRESHOLD * 2.0 if GameData.is_mobile() else REDRAW_THRESHOLD
+	if _last_cam_pos.distance_squared_to(cam_pos) > redraw_threshold * redraw_threshold:
 		_last_cam_pos = cam_pos
 		queue_redraw()
 
