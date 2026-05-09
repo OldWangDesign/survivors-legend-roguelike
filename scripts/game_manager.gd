@@ -23,8 +23,11 @@ var debug_panel: Control = null
 var pause_menu: Control = null
 var _chest_timer: float = 0.0
 var _next_chest_interval: float = 30.0
-var _world_event_timer: float = 0.0
-var _next_world_event_interval: float = 32.0
+var _danger_zone_timer: float = 0.0
+var _next_danger_interval: float = 25.0
+var _healing_point_timer: float = 0.0
+var _next_healing_interval: float = 42.0
+const MAP_EVENT_START_TIME := 90.0  # 1.5 min 后激活
 
 var _stage_data: Dictionary = {}
 
@@ -55,7 +58,7 @@ func _ready() -> void:
 func _create_background() -> void:
 	var bg := Node2D.new()
 	bg.set_script(preload("res://scripts/background.gd"))
-	bg.z_index = -10
+	bg.z_index = GameData.Z_BACKGROUND
 	add_child(bg)
 
 
@@ -283,9 +286,13 @@ func _check_enemy_contact() -> void:
 	if not is_instance_valid(player) or player.invincible or _god_mode:
 		return
 	var ppos := player.global_position
-	var max_contact: float = player.hit_radius + 30.0
+	# Boss 半径最大 56，需扩大查询半径
+	var max_contact: float = player.hit_radius + 70.0
 	for enemy in SpatialGrid.get_nearby(ppos, max_contact):
 		if not is_instance_valid(enemy):
+			continue
+		# 登场期 Boss 不造成接触伤害
+		if enemy.get("_entering"):
 			continue
 		var contact_dist: float = player.hit_radius + enemy.enemy_size
 		if ppos.distance_squared_to(enemy.global_position) < contact_dist * contact_dist:
@@ -321,40 +328,63 @@ func _spawn_random_chest() -> void:
 func _update_world_events(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
-	if elapsed_time < 25.0:
+	# 1.5min 后才开始（PRD 5.7）
+	if elapsed_time < MAP_EVENT_START_TIME:
 		return
-	_world_event_timer += delta
-	if _world_event_timer < _next_world_event_interval:
+
+	# 危险区：每 20-30s 尝试一次（同屏已有则跳过）
+	_danger_zone_timer += delta
+	if _danger_zone_timer >= _next_danger_interval:
+		_danger_zone_timer = 0.0
+		_next_danger_interval = randf_range(20.0, 30.0)
+		if GameData.is_mobile():
+			_next_danger_interval += 8.0
+		_try_spawn_danger_zone()
+
+	# 治疗点：每 35-50s 尝试一次（同屏已有则跳过）
+	_healing_point_timer += delta
+	if _healing_point_timer >= _next_healing_interval:
+		_healing_point_timer = 0.0
+		_next_healing_interval = randf_range(35.0, 50.0)
+		if GameData.is_mobile():
+			_next_healing_interval += 10.0
+		_try_spawn_healing_point()
+
+
+func _has_world_event(group: String) -> bool:
+	# 检查同屏是否已有该类型的世界事件
+	for child in get_children():
+		var script: Script = child.get_script()
+		if script and script.resource_path.find(group) >= 0:
+			return true
+	return false
+
+
+# 玩家 facing 方向 200-400px ±60° 扇形（PRD 5.10.5）
+func _get_world_event_position(min_dist: float = 200.0, max_dist: float = 400.0) -> Vector2:
+	var base_dir: Vector2 = player.facing if player.facing.length_squared() > 0.01 else Vector2.RIGHT
+	var spread: float = deg_to_rad(60.0)
+	var ang_offset: float = randf_range(-spread, spread)
+	var dir: Vector2 = base_dir.rotated(ang_offset)
+	var dist: float = randf_range(min_dist, max_dist)
+	return player.global_position + dir * dist
+
+
+func _try_spawn_danger_zone() -> void:
+	if _has_world_event("danger_zone"):
 		return
-	_world_event_timer = 0.0
-	_next_world_event_interval = randf_range(GameData.WORLD_EVENT_INTERVAL_MIN, GameData.WORLD_EVENT_INTERVAL_MAX)
-	if GameData.is_mobile():
-		_next_world_event_interval += 12.0
-
-	var roll := randf()
-	if roll < 0.65:
-		_spawn_danger_zone()
-	else:
-		_spawn_healing_point()
-
-
-func _get_world_event_position(min_dist: float, max_dist: float) -> Vector2:
-	var angle := randf() * TAU
-	var dist := randf_range(min_dist, max_dist)
-	return player.global_position + Vector2(cos(angle), sin(angle)) * dist
-
-
-func _spawn_danger_zone() -> void:
 	var zone := Node2D.new()
 	zone.set_script(preload("res://scripts/world/danger_zone.gd"))
-	zone.global_position = _get_world_event_position(170.0, 420.0)
+	zone.global_position = _get_world_event_position(200.0, 400.0)
 	add_child(zone)
 
 
-func _spawn_healing_point() -> void:
+func _try_spawn_healing_point() -> void:
+	if _has_world_event("healing_point"):
+		return
 	var point := Node2D.new()
 	point.set_script(preload("res://scripts/world/healing_point.gd"))
-	point.global_position = _get_world_event_position(120.0, 320.0)
+	point.global_position = _get_world_event_position(200.0, 400.0)
 	add_child(point)
 
 
@@ -590,10 +620,54 @@ func _debug_spawn_wave() -> void:
 
 
 func _debug_spawn_boss() -> void:
+	# 兼容 Ctrl+2 快捷键：默认生成骸骨领主 + 标准模式
+	_debug_spawn_boss_specific("bone_lord", "standard")
+
+
+# Boss 调试生成（PRD 配套）：mode 取值 full / standard / instant
+func _debug_spawn_boss_specific(boss_id: String, mode: String = "standard") -> void:
 	if not is_instance_valid(player):
 		return
+	if not GameData.BOSS_DATA.has(boss_id):
+		return
+
+	var spawn_distance: float
+	var skip_entering: bool
+	match mode:
+		"full":
+			spawn_distance = 800.0
+			skip_entering = false
+		"instant":
+			spawn_distance = 300.0
+			skip_entering = true
+		_:  # standard
+			spawn_distance = 300.0
+			skip_entering = false
+
 	var difficulty := GameData.get_difficulty_multiplier(elapsed_time)
-	_debug_spawn_single("boss", difficulty)
+	var angle := randf() * TAU
+	var dir_vec := Vector2(cos(angle), sin(angle))
+	var spawn_pos: Vector2 = player.global_position + dir_vec * spawn_distance
+	var target_pos: Vector2 = player.global_position + dir_vec * 200.0
+
+	var boss := Node2D.new()
+	boss.set_script(preload("res://scripts/boss_enemy.gd"))
+	boss.global_position = spawn_pos
+	boss._enter_start_pos = spawn_pos
+	boss._enter_target_pos = target_pos
+
+	if enemies_container and is_instance_valid(enemies_container):
+		enemies_container.add_child(boss)
+		boss.setup_boss(boss_id, difficulty)
+		if skip_entering:
+			# 立即结束登场期
+			boss._entering = false
+			boss._enter_timer = 0.0
+			boss._enter_shockwave_done = true
+			boss._enter_title_shown = true
+			boss._enter_darken_shown = true
+			boss.global_position = target_pos
+		AudioManager.start_boss_bgm()
 
 
 func _debug_spawn_single(type_key: String, difficulty: float) -> void:

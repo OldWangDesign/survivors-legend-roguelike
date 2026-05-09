@@ -21,9 +21,12 @@ func attack() -> void:
 
 
 func _fire(pos: Vector2, dir: Vector2) -> void:
+	var scene := get_scene()
+	if scene == null:
+		return
 	var proj := Node2D.new()
 	proj.set_script(preload("res://scripts/weapons/projectile.gd"))
-	get_scene().add_child(proj)
+	scene.add_child(proj)
 	proj.global_position = pos
 
 	var area: float = GameData.get_weapon_area(weapon_type, weapon_level)
@@ -46,12 +49,17 @@ func _on_proj_exit(proj: Node2D) -> void:
 
 
 func _explode(pos: Vector2, radius: float, dmg: int) -> void:
+	var scene := get_scene()
+	if scene == null:
+		return
 	for enemy in SpatialGrid.get_in_range(pos, radius):
+		if not is_instance_valid(enemy):
+			continue
 		enemy.take_damage(dmg)
 		spawn_damage_number(enemy.global_position, dmg)
 
 	var fx := Node2D.new()
 	fx.set_script(preload("res://scripts/weapons/fireball_explosion.gd"))
-	get_scene().add_child(fx)
+	scene.add_child(fx)
 	fx.global_position = pos
 	fx.setup(radius)

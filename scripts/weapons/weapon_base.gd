@@ -76,6 +76,11 @@ func get_nearest_enemy(from: Vector2, max_range: float = 999999.0) -> Node2D:
 
 
 func spawn_damage_number(pos: Vector2, dmg: int) -> void:
+	# 暴击判定沿用 dmg >= 20（PRD 5.3）；偏移砍到 ±3
 	var is_crit := dmg >= 20
 	var col := Color.GOLD if is_crit else Color(1, 0.9, 0.7)
-	VfxPool.float_text(pos + Vector2(randf_range(-5, 5), -10), str(dmg), col, 16.0, is_crit)
+	VfxPool.float_text(pos + Vector2(randf_range(-3, 3), -10), str(dmg), col, 16.0, is_crit)
+
+
+func is_evolved_weapon() -> bool:
+	return weapon_type >= GameData.WeaponType.INFERNO_STORM

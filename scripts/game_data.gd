@@ -251,6 +251,38 @@ var ENEMY_TYPES: Dictionary = {
 		"size": 24.0,
 		"color": Color(0.9, 0.1, 0.1),
 	},
+	# 机制怪（PRD 5.10.1）
+	"charger": {
+		"name": "冲锋者",
+		"health": 50.0,
+		"damage": 8,
+		"charge_damage": 16,
+		"speed": 24.0,
+		"charge_speed": 110.0,
+		"xp_value": 8,
+		"size": 14.0,
+		"color": Color(0.85, 0.25, 0.15),
+		"behavior": "charger",
+	},
+	"ranged": {
+		"name": "巫医",
+		"health": 24.0,
+		"damage": 10,
+		"speed": 30.0,
+		"retreat_speed": 36.0,
+		"keep_distance": 140.0,
+		"shoot_interval": 2.5,
+		"xp_value": 6,
+		"size": 12.0,
+		"color": Color(0.55, 0.3, 0.85),
+		"behavior": "ranged",
+	},
+}
+
+# 机制怪 modulate（PRD 5.10.2）
+const MECH_ENEMY_MODULATE: Dictionary = {
+	"charger": Color(1.0, 0.45, 0.45),
+	"ranged": Color(0.7, 0.55, 0.95),
 }
 
 const BOSS_DATA: Dictionary = {
@@ -259,7 +291,7 @@ const BOSS_DATA: Dictionary = {
 		"health_mult": 2.5,
 		"damage_mult": 2.0,
 		"speed": 75.0,
-		"size": 28.0,
+		"size": 40.0,
 		"color": Color(0.9, 0.85, 0.6),
 		"skills": ["bone_spike", "summon_skeleton", "charge"],
 		"damage_cap": 15,
@@ -269,7 +301,7 @@ const BOSS_DATA: Dictionary = {
 		"health_mult": 3.5,
 		"damage_mult": 2.5,
 		"speed": 60.0,
-		"size": 32.0,
+		"size": 48.0,
 		"color": Color(0.5, 0.2, 0.8),
 		"skills": ["soul_barrage", "phantom_split", "dark_field"],
 		"damage_cap": 20,
@@ -279,7 +311,7 @@ const BOSS_DATA: Dictionary = {
 		"health_mult": 5.0,
 		"damage_mult": 3.0,
 		"speed": 70.0,
-		"size": 36.0,
+		"size": 56.0,
 		"color": Color(0.8, 0.05, 0.15),
 		"skills": ["moon_wrath", "summon_elite", "undying"],
 		"damage_cap": 28,
@@ -292,21 +324,21 @@ var STAGE_DATA: Dictionary = {
 	3: {"name": "1-3 僵尸围城", "chapter": "幽暗森林", "description": "存活 90 秒", "duration": 90.0, "bg_style": "grassland", "enemy_pool": ["zombie", "zombie", "bat"], "difficulty_mult": 0.9, "spawn_rate": 1.2, "win_condition": "survive", "win_value": 90, "boss_count": 0, "boss_time": [], "unlock_requires": 2},
 	4: {"name": "1-4 幽灵夜袭", "chapter": "幽暗森林", "description": "消灭 80 只敌人", "duration": 120.0, "bg_style": "grassland", "enemy_pool": ["ghost", "ghost", "bat"], "difficulty_mult": 1.0, "spawn_rate": 1.1, "win_condition": "kills", "win_value": 80, "boss_count": 0, "boss_time": [], "unlock_requires": 3},
 	5: {"name": "1-5 森林守卫", "chapter": "幽暗森林", "description": "击败 Boss", "duration": 120.0, "bg_style": "grassland", "enemy_pool": ["bat", "skeleton"], "difficulty_mult": 1.0, "spawn_rate": 0.8, "win_condition": "boss", "win_value": 1, "boss_count": 1, "boss_time": [10.0], "unlock_requires": 4, "boss_id": "bone_lord"},
-	6: {"name": "2-1 骨兵方阵", "chapter": "亡灵墓地", "description": "消灭 100 只敌人", "duration": 120.0, "bg_style": "dungeon", "enemy_pool": ["skeleton", "skeleton", "bat"], "difficulty_mult": 1.1, "spawn_rate": 1.3, "win_condition": "kills", "win_value": 100, "boss_count": 0, "boss_time": [], "unlock_requires": 5},
-	7: {"name": "2-2 毒沼幽潭", "chapter": "亡灵墓地", "description": "存活 120 秒", "duration": 120.0, "bg_style": "dungeon", "enemy_pool": ["zombie", "zombie", "zombie", "bat"], "difficulty_mult": 1.2, "spawn_rate": 1.2, "win_condition": "survive", "win_value": 120, "boss_count": 0, "boss_time": [], "unlock_requires": 6},
-	8: {"name": "2-3 鬼影重重", "chapter": "亡灵墓地", "description": "消灭 80 只幽灵", "duration": 120.0, "bg_style": "dungeon", "enemy_pool": ["ghost"], "difficulty_mult": 1.2, "spawn_rate": 1.4, "win_condition": "kills", "win_value": 80, "boss_count": 0, "boss_time": [], "unlock_requires": 7},
-	9: {"name": "2-4 亡灵潮汐", "chapter": "亡灵墓地", "description": "消灭 150 只敌人", "duration": 150.0, "bg_style": "dungeon", "enemy_pool": ["bat", "skeleton", "zombie", "ghost"], "difficulty_mult": 1.3, "spawn_rate": 1.5, "win_condition": "kills", "win_value": 150, "boss_count": 0, "boss_time": [], "unlock_requires": 8},
-	10: {"name": "2-5 墓地领主", "chapter": "亡灵墓地", "description": "击败 2 个 Boss", "duration": 150.0, "bg_style": "dungeon", "enemy_pool": ["skeleton", "zombie", "ghost"], "difficulty_mult": 1.3, "spawn_rate": 1.0, "win_condition": "boss", "win_value": 2, "boss_count": 2, "boss_time": [15.0, 75.0], "unlock_requires": 9, "boss_ids": ["bone_lord", "shadow_lich"]},
-	11: {"name": "3-1 烈焰蝙蝠", "chapter": "熔岩地狱", "description": "存活 150 秒", "duration": 150.0, "bg_style": "lava", "enemy_pool": ["bat", "bat", "bat", "skeleton"], "difficulty_mult": 1.5, "spawn_rate": 1.8, "win_condition": "survive", "win_value": 150, "boss_count": 0, "boss_time": [], "unlock_requires": 10},
-	12: {"name": "3-2 骨火军团", "chapter": "熔岩地狱", "description": "消灭 120 只敌人", "duration": 150.0, "bg_style": "lava", "enemy_pool": ["skeleton", "skeleton", "zombie"], "difficulty_mult": 1.6, "spawn_rate": 1.5, "win_condition": "kills", "win_value": 120, "boss_count": 0, "boss_time": [], "unlock_requires": 11},
-	13: {"name": "3-3 幽魂狂潮", "chapter": "熔岩地狱", "description": "消灭 100 只幽灵", "duration": 150.0, "bg_style": "lava", "enemy_pool": ["ghost", "ghost", "bat"], "difficulty_mult": 1.7, "spawn_rate": 1.6, "win_condition": "kills", "win_value": 100, "boss_count": 0, "boss_time": [], "unlock_requires": 12},
-	14: {"name": "3-4 地狱混战", "chapter": "熔岩地狱", "description": "消灭 200 只敌人", "duration": 180.0, "bg_style": "lava", "enemy_pool": ["bat", "skeleton", "zombie", "ghost"], "difficulty_mult": 1.8, "spawn_rate": 1.8, "win_condition": "kills", "win_value": 200, "boss_count": 0, "boss_time": [], "unlock_requires": 13},
-	15: {"name": "3-5 炎魔", "chapter": "熔岩地狱", "description": "击败 3 个 Boss", "duration": 180.0, "bg_style": "lava", "enemy_pool": ["skeleton", "zombie", "ghost"], "difficulty_mult": 1.8, "spawn_rate": 1.2, "win_condition": "boss", "win_value": 3, "boss_count": 3, "boss_time": [15.0, 70.0, 130.0], "unlock_requires": 14, "boss_ids": ["bone_lord", "shadow_lich", "blood_moon"]},
-	16: {"name": "4-1 虚空侵蚀", "chapter": "虚空深渊", "description": "存活 180 秒", "duration": 180.0, "bg_style": "ice", "enemy_pool": ["bat", "skeleton", "zombie", "ghost"], "difficulty_mult": 2.0, "spawn_rate": 2.0, "win_condition": "survive", "win_value": 180, "boss_count": 0, "boss_time": [], "unlock_requires": 15},
-	17: {"name": "4-2 灵魂风暴", "chapter": "虚空深渊", "description": "消灭 200 只敌人", "duration": 180.0, "bg_style": "ice", "enemy_pool": ["ghost", "ghost", "skeleton", "bat"], "difficulty_mult": 2.0, "spawn_rate": 2.2, "win_condition": "kills", "win_value": 200, "boss_count": 0, "boss_time": [], "unlock_requires": 16},
-	18: {"name": "4-3 末日军团", "chapter": "虚空深渊", "description": "消灭 250 只敌人", "duration": 210.0, "bg_style": "ice", "enemy_pool": ["skeleton", "zombie", "ghost"], "difficulty_mult": 2.2, "spawn_rate": 2.0, "win_condition": "kills", "win_value": 250, "boss_count": 1, "boss_time": [60.0], "unlock_requires": 17, "boss_id": "shadow_lich"},
-	19: {"name": "4-4 深渊之战", "chapter": "虚空深渊", "description": "存活 240 秒", "duration": 240.0, "bg_style": "ice", "enemy_pool": ["bat", "skeleton", "zombie", "ghost"], "difficulty_mult": 2.5, "spawn_rate": 2.5, "win_condition": "survive", "win_value": 240, "boss_count": 0, "boss_time": [], "unlock_requires": 18},
-	20: {"name": "4-5 最终Boss", "chapter": "虚空深渊", "description": "击败 5 个 Boss", "duration": 300.0, "bg_style": "ice", "enemy_pool": ["skeleton", "zombie", "ghost", "ghost"], "difficulty_mult": 2.5, "spawn_rate": 1.5, "win_condition": "boss", "win_value": 5, "boss_count": 5, "boss_time": [20.0, 70.0, 130.0, 200.0, 260.0], "unlock_requires": 19, "boss_ids": ["bone_lord", "shadow_lich", "blood_moon", "bone_lord", "shadow_lich"]},
+	6: {"name": "2-1 骨兵方阵", "chapter": "亡灵墓地", "description": "消灭 100 只敌人", "duration": 120.0, "bg_style": "dungeon", "enemy_pool": ["skeleton", "skeleton", "bat"], "difficulty_mult": 1.1, "spawn_rate": 1.3, "win_condition": "kills", "win_value": 100, "boss_count": 0, "boss_time": [], "unlock_requires": 5, "mech_enemy_chance": 0.05},
+	7: {"name": "2-2 毒沼幽潭", "chapter": "亡灵墓地", "description": "存活 120 秒", "duration": 120.0, "bg_style": "dungeon", "enemy_pool": ["zombie", "zombie", "zombie", "bat"], "difficulty_mult": 1.2, "spawn_rate": 1.2, "win_condition": "survive", "win_value": 120, "boss_count": 0, "boss_time": [], "unlock_requires": 6, "mech_enemy_chance": 0.05},
+	8: {"name": "2-3 鬼影重重", "chapter": "亡灵墓地", "description": "消灭 80 只幽灵", "duration": 120.0, "bg_style": "dungeon", "enemy_pool": ["ghost"], "difficulty_mult": 1.2, "spawn_rate": 1.4, "win_condition": "kills", "win_value": 80, "boss_count": 0, "boss_time": [], "unlock_requires": 7, "mech_enemy_chance": 0.05},
+	9: {"name": "2-4 亡灵潮汐", "chapter": "亡灵墓地", "description": "消灭 150 只敌人", "duration": 150.0, "bg_style": "dungeon", "enemy_pool": ["bat", "skeleton", "zombie", "ghost"], "difficulty_mult": 1.3, "spawn_rate": 1.5, "win_condition": "kills", "win_value": 150, "boss_count": 0, "boss_time": [], "unlock_requires": 8, "mech_enemy_chance": 0.05},
+	10: {"name": "2-5 墓地领主", "chapter": "亡灵墓地", "description": "击败 2 个 Boss", "duration": 150.0, "bg_style": "dungeon", "enemy_pool": ["skeleton", "zombie", "ghost"], "difficulty_mult": 1.3, "spawn_rate": 1.0, "win_condition": "boss", "win_value": 2, "boss_count": 2, "boss_time": [15.0, 75.0], "unlock_requires": 9, "boss_ids": ["bone_lord", "shadow_lich"], "mech_enemy_chance": 0.05},
+	11: {"name": "3-1 烈焰蝙蝠", "chapter": "熔岩地狱", "description": "存活 150 秒", "duration": 150.0, "bg_style": "lava", "enemy_pool": ["bat", "bat", "bat", "skeleton"], "difficulty_mult": 1.5, "spawn_rate": 1.8, "win_condition": "survive", "win_value": 150, "boss_count": 0, "boss_time": [], "unlock_requires": 10, "mech_enemy_chance": 0.15},
+	12: {"name": "3-2 骨火军团", "chapter": "熔岩地狱", "description": "消灭 120 只敌人", "duration": 150.0, "bg_style": "lava", "enemy_pool": ["skeleton", "skeleton", "zombie"], "difficulty_mult": 1.6, "spawn_rate": 1.5, "win_condition": "kills", "win_value": 120, "boss_count": 0, "boss_time": [], "unlock_requires": 11, "mech_enemy_chance": 0.15},
+	13: {"name": "3-3 幽魂狂潮", "chapter": "熔岩地狱", "description": "消灭 100 只幽灵", "duration": 150.0, "bg_style": "lava", "enemy_pool": ["ghost", "ghost", "bat"], "difficulty_mult": 1.7, "spawn_rate": 1.6, "win_condition": "kills", "win_value": 100, "boss_count": 0, "boss_time": [], "unlock_requires": 12, "mech_enemy_chance": 0.15},
+	14: {"name": "3-4 地狱混战", "chapter": "熔岩地狱", "description": "消灭 200 只敌人", "duration": 180.0, "bg_style": "lava", "enemy_pool": ["bat", "skeleton", "zombie", "ghost"], "difficulty_mult": 1.8, "spawn_rate": 1.8, "win_condition": "kills", "win_value": 200, "boss_count": 0, "boss_time": [], "unlock_requires": 13, "mech_enemy_chance": 0.15},
+	15: {"name": "3-5 炎魔", "chapter": "熔岩地狱", "description": "击败 3 个 Boss", "duration": 180.0, "bg_style": "lava", "enemy_pool": ["skeleton", "zombie", "ghost"], "difficulty_mult": 1.8, "spawn_rate": 1.2, "win_condition": "boss", "win_value": 3, "boss_count": 3, "boss_time": [15.0, 70.0, 130.0], "unlock_requires": 14, "boss_ids": ["bone_lord", "shadow_lich", "blood_moon"], "mech_enemy_chance": 0.15},
+	16: {"name": "4-1 虚空侵蚀", "chapter": "虚空深渊", "description": "存活 180 秒", "duration": 180.0, "bg_style": "ice", "enemy_pool": ["bat", "skeleton", "zombie", "ghost"], "difficulty_mult": 2.0, "spawn_rate": 2.0, "win_condition": "survive", "win_value": 180, "boss_count": 0, "boss_time": [], "unlock_requires": 15, "mech_enemy_chance": 0.25},
+	17: {"name": "4-2 灵魂风暴", "chapter": "虚空深渊", "description": "消灭 200 只敌人", "duration": 180.0, "bg_style": "ice", "enemy_pool": ["ghost", "ghost", "skeleton", "bat"], "difficulty_mult": 2.0, "spawn_rate": 2.2, "win_condition": "kills", "win_value": 200, "boss_count": 0, "boss_time": [], "unlock_requires": 16, "mech_enemy_chance": 0.25},
+	18: {"name": "4-3 末日军团", "chapter": "虚空深渊", "description": "消灭 250 只敌人", "duration": 210.0, "bg_style": "ice", "enemy_pool": ["skeleton", "zombie", "ghost"], "difficulty_mult": 2.2, "spawn_rate": 2.0, "win_condition": "kills", "win_value": 250, "boss_count": 1, "boss_time": [60.0], "unlock_requires": 17, "boss_id": "shadow_lich", "mech_enemy_chance": 0.25},
+	19: {"name": "4-4 深渊之战", "chapter": "虚空深渊", "description": "存活 240 秒", "duration": 240.0, "bg_style": "ice", "enemy_pool": ["bat", "skeleton", "zombie", "ghost"], "difficulty_mult": 2.5, "spawn_rate": 2.5, "win_condition": "survive", "win_value": 240, "boss_count": 0, "boss_time": [], "unlock_requires": 18, "mech_enemy_chance": 0.25},
+	20: {"name": "4-5 最终Boss", "chapter": "虚空深渊", "description": "击败 5 个 Boss", "duration": 300.0, "bg_style": "ice", "enemy_pool": ["skeleton", "zombie", "ghost", "ghost"], "difficulty_mult": 2.5, "spawn_rate": 1.5, "win_condition": "boss", "win_value": 5, "boss_count": 5, "boss_time": [20.0, 70.0, 130.0, 200.0, 260.0], "unlock_requires": 19, "boss_ids": ["bone_lord", "shadow_lich", "blood_moon", "bone_lord", "shadow_lich"], "mech_enemy_chance": 0.25},
 }
 
 var unlocked_stages: Array = [1]
@@ -360,8 +392,10 @@ const FLOAT_TEXT_CAP_DEFAULT := 48
 const FLOAT_TEXT_CAP_MOBILE := 18
 const FLOAT_TEXT_PER_SECOND_DEFAULT := 60
 const FLOAT_TEXT_PER_SECOND_MOBILE := 18
-const PROJECTILE_TRAIL_LENGTH_DEFAULT := 8
+# 普通武器拖尾长度（PRD 5.3 / 5.9.2）：4 帧；进化武器自行渲染保留 8 帧
+const PROJECTILE_TRAIL_LENGTH_DEFAULT := 4
 const PROJECTILE_TRAIL_LENGTH_MOBILE := 3
+const PROJECTILE_TRAIL_LENGTH_EVOLVED := 8
 const SPAWN_RATE_SCALE_DEFAULT := 0.88
 const SPAWN_RATE_SCALE_MOBILE := 0.62
 const SWARM_COUNT_SCALE_DEFAULT := 0.78
@@ -382,6 +416,22 @@ var sprites: Dictionary = {}
 var weapon_icons: Dictionary = {}
 var current_style: String = "style_i_mystery"
 var bg_style: String = "mystery_skull"
+
+# z-index 统一规划（v0.6 PRD 5.9.1）
+const Z_BACKGROUND := -10
+const Z_DANGER_ZONE := -5
+const Z_HEALING_POINT := -4
+const Z_GEM := 0
+const Z_ENEMY := 0
+const Z_PLAYER_MARKER := 0
+const Z_PLAYER := 1
+const Z_BOSS := 2
+const Z_TRAIL := 5
+const Z_VFX_MID := 7
+const Z_VFX_HIGH := 10
+const Z_FLOAT_TEXT := 20
+const Z_BANNER := 50
+const Z_SCREEN_FLASH := 100
 
 # Pixel UI color palette
 const UI_BG_DARK := Color(0.05, 0.05, 0.10)

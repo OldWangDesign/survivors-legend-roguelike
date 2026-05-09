@@ -905,6 +905,59 @@ func show_reward_notice(text: String, color: Color = Color.WHITE, duration: floa
 	_warn_timer = duration
 
 
+# PRD 5.5.0 通用横幅：垂直 1/3 处、48px、半透明黑色描边
+func show_banner(text: String, color: Color = GameData.UI_GOLD, duration: float = 2.0) -> void:
+	var scene := get_tree().current_scene
+	if not scene:
+		return
+	var layer := CanvasLayer.new()
+	layer.layer = GameData.Z_BANNER
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	scene.add_child(layer)
+
+	var container := Control.new()
+	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(container)
+
+	var bg := ColorRect.new()
+	bg.color = Color(0, 0, 0, 0.55)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bg)
+
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 48)
+	lbl.add_theme_color_override("font_color", color)
+	lbl.add_theme_constant_override("outline_size", 4)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
+	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
+	lbl.add_theme_constant_override("shadow_offset_x", 3)
+	lbl.add_theme_constant_override("shadow_offset_y", 3)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(lbl)
+
+	var vp_size: Vector2 = scene.get_viewport().get_visible_rect().size
+	var y_pos: float = vp_size.y * 0.33
+	lbl.size = Vector2(vp_size.x, 60.0)
+	lbl.position = Vector2(0, y_pos - 30.0)
+	bg.size = Vector2(vp_size.x, 70.0)
+	bg.position = Vector2(0, y_pos - 35.0)
+
+	container.modulate.a = 0.0
+	var tw := container.create_tween()
+	tw.set_process_mode(Tween.TWEEN_PROCESS_IDLE)
+	tw.tween_property(container, "modulate:a", 1.0, 0.25)
+	tw.tween_interval(duration)
+	tw.tween_property(container, "modulate:a", 0.0, 0.35)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(layer):
+			layer.queue_free()
+	)
+
+
 func _update_passive_indicator() -> void:
 	var player := GameData.player_ref
 	if not is_instance_valid(player) or not _passive_lbl:

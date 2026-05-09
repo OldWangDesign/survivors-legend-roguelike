@@ -100,8 +100,12 @@ func _spawn_wave(time: float) -> void:
 
 	var count: int = _get_spawn_count()
 	var pool: Array = _stage.get("enemy_pool", ["bat"])
+	# 闯关模式按 mech_enemy_chance 替换为机制怪（PRD 5.10.3）
+	var mech_chance: float = _stage.get("mech_enemy_chance", 0.0)
 	for i in range(count):
 		var type_key: String = pool[randi() % pool.size()]
+		if mech_chance > 0.0 and randf() < mech_chance:
+			type_key = ["charger", "ranged"].pick_random()
 		_spawn_enemy(type_key, player.global_position, eff_difficulty)
 
 

@@ -32,6 +32,23 @@ const ELITE_AURA_COLORS: Dictionary = {
 	"splitter": Color(0.2, 1.0, 0.3, 0.5),
 }
 
+# 机制怪行为（PRD 5.10）
+var _behavior: String = ""
+var _base_modulate: Color = Color.WHITE
+var _charge_damage: int = 0
+var _charge_speed: float = 0.0
+var _retreat_speed: float = 0.0
+var _keep_distance: float = 140.0
+var _shoot_interval: float = 2.5
+# Charger 状态机：IDLE / WARNING / CHARGING / COOLDOWN
+enum ChargerState { IDLE, WARNING, CHARGING, COOLDOWN }
+var _charger_state: int = ChargerState.IDLE
+var _charger_state_timer: float = 0.0
+var _charger_charge_dir: Vector2 = Vector2.ZERO
+var _charger_charge_dist: float = 0.0
+# Ranged 状态
+var _ranged_shoot_timer: float = 0.0
+
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -48,18 +65,43 @@ func setup(type_key: String, difficulty_mult: float = 1.0) -> void:
 	xp_value = data["xp_value"]
 	enemy_size = data["size"]
 	color = data["color"]
+	_behavior = data.get("behavior", "")
+	# 机制怪参数
+	if _behavior == "charger":
+		_charge_damage = int(data.get("charge_damage", 16) * difficulty_mult)
+		_charge_speed = data.get("charge_speed", 110.0)
+		_charger_state = ChargerState.IDLE
+		_charger_state_timer = randf_range(2.0, 4.0)
+	elif _behavior == "ranged":
+		_retreat_speed = data.get("retreat_speed", 36.0)
+		_keep_distance = data.get("keep_distance", 140.0)
+		_shoot_interval = data.get("shoot_interval", 2.5)
+		_ranged_shoot_timer = randf_range(0.5, _shoot_interval)
+
+	# 机制怪复用 sprite：charger -> zombie；ranged -> skeleton
+	var sprite_key: String = type_key
+	if _behavior == "charger":
+		sprite_key = "zombie"
+	elif _behavior == "ranged":
+		sprite_key = "skeleton"
 
 	_sprite = Sprite2D.new()
-	var sprite_data = GameData.sprites.get(type_key)
+	var sprite_data = GameData.sprites.get(sprite_key)
 	if sprite_data is Array and sprite_data.size() > 0:
 		_sprite.texture = sprite_data[0]
 	elif sprite_data is ImageTexture:
 		_sprite.texture = sprite_data
-	var sprite_base := 16.0 if type_key != "boss" else 24.0
+	var sprite_base := 16.0 if sprite_key != "boss" else 24.0
 	_sprite.scale = Vector2.ONE * (enemy_size * 2.0 / sprite_base)
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	if type_key == "ghost":
-		_sprite.modulate.a = 0.75
+	# 常驻 modulate（机制怪有彩色）
+	if GameData.MECH_ENEMY_MODULATE.has(type_key):
+		_base_modulate = GameData.MECH_ENEMY_MODULATE[type_key]
+	elif type_key == "ghost":
+		_base_modulate = Color(1, 1, 1, 0.75)
+	else:
+		_base_modulate = Color.WHITE
+	_sprite.modulate = _base_modulate
 	add_child(_sprite)
 
 	_anim_timer = randf() * ANIM_SPEED
@@ -117,18 +159,23 @@ func _physics_process(delta: float) -> void:
 	var move_dir: Vector2
 	var move_speed: float = speed * _slow_mult
 
-	if _rush_mode:
+	if _behavior == "charger":
+		move_dir = _update_charger(delta, player, move_speed)
+	elif _behavior == "ranged":
+		move_dir = _update_ranged(delta, player, move_speed)
+	elif _rush_mode:
 		var to_target := _rush_target - global_position
 		if to_target.length() < 30.0:
 			_rush_mode = false
+			move_dir = (player.global_position - global_position).normalized()
 		else:
 			move_dir = to_target.normalized()
 			move_speed *= _rush_speed_mult
-	
-	if not _rush_mode:
+		position += move_dir * move_speed * delta
+	else:
 		move_dir = (player.global_position - global_position).normalized()
+		position += move_dir * move_speed * delta
 
-	position += move_dir * move_speed * delta
 	SpatialGrid.update_position(self)
 
 	if _slow_timer > 0:
@@ -146,7 +193,13 @@ func _physics_process(delta: float) -> void:
 	if _anim_timer >= ANIM_SPEED:
 		_anim_timer -= ANIM_SPEED
 		_anim_frame = 1 - _anim_frame
-		var anim_data = GameData.sprites.get(enemy_type)
+		# 机制怪共用 zombie/skeleton sprite
+		var anim_key: String = enemy_type
+		if _behavior == "charger":
+			anim_key = "zombie"
+		elif _behavior == "ranged":
+			anim_key = "skeleton"
+		var anim_data = GameData.sprites.get(anim_key)
 		if anim_data is Array and _anim_frame < anim_data.size():
 			_sprite.texture = anim_data[_anim_frame]
 
@@ -155,18 +208,118 @@ func _physics_process(delta: float) -> void:
 			_sprite.modulate = Color(3, 3, 3)
 		elif _slow_mult < 1.0:
 			_sprite.modulate = Color(0.5, 0.7, 1.0)
-		elif enemy_type == "ghost":
-			_sprite.modulate = Color(1, 1, 1, 0.75)
 		elif elite_type == "splitter":
-			_sprite.modulate = Color(1, 1, 1, 0.8)
+			var c := _base_modulate
+			c.a = minf(0.8, c.a) if c.a > 0.001 else 0.8
+			_sprite.modulate = c
 		else:
-			_sprite.modulate = Color.WHITE
+			_sprite.modulate = _base_modulate
 
 	if elite_type != "":
 		_elite_aura_timer += delta
 
-	if _flash_timer > 0 or elite_type != "" or health < max_health:
+	# 机制怪、有 _draw 内容（charger 预警/标识符、ranged 标识符）需要每帧重绘
+	if _flash_timer > 0 or elite_type != "" or health < max_health or _behavior != "":
 		queue_redraw()
+
+
+# 冲锋怪：状态机 IDLE → WARNING → CHARGING → COOLDOWN
+func _update_charger(delta: float, player: Node2D, base_speed: float) -> Vector2:
+	var to_player: Vector2 = player.global_position - global_position
+	var move_dir: Vector2 = to_player.normalized()
+	_charger_state_timer -= delta
+
+	match _charger_state:
+		ChargerState.IDLE:
+			# 普通追击；CD 到了切到 WARNING
+			position += move_dir * base_speed * delta
+			if _charger_state_timer <= 0:
+				_charger_state = ChargerState.WARNING
+				_charger_state_timer = 0.9
+				_charger_charge_dir = move_dir
+		ChargerState.WARNING:
+			# 站住预警（红色闪烁）；预警结束开始冲刺
+			if _charger_state_timer <= 0:
+				_charger_state = ChargerState.CHARGING
+				_charger_state_timer = 1.6
+				_charger_charge_dist = 0.0
+				_charger_charge_dir = move_dir
+		ChargerState.CHARGING:
+			var cspd: float = _charge_speed * _slow_mult
+			var step: float = cspd * delta
+			position += _charger_charge_dir * step
+			_charger_charge_dist += step
+			# 命中判定：途中触碰玩家
+			if global_position.distance_to(player.global_position) < player.hit_radius + enemy_size:
+				if not player.invincible:
+					player.take_damage(_charge_damage)
+					player.apply_knockback(_charger_charge_dir * 100.0)
+				_charger_state = ChargerState.COOLDOWN
+				_charger_state_timer = 3.5
+			# 距离到了或超时：扑空回 COOLDOWN
+			elif _charger_charge_dist >= 180.0 or _charger_state_timer <= 0:
+				_charger_state = ChargerState.COOLDOWN
+				_charger_state_timer = 3.0  # 扑空后 CD
+		ChargerState.COOLDOWN:
+			# 普通追击
+			position += move_dir * base_speed * delta
+			if _charger_state_timer <= 0:
+				_charger_state = ChargerState.IDLE
+				_charger_state_timer = randf_range(2.5, 4.0)
+	return move_dir
+
+
+# 远程怪：保持距离 + 低频弹幕；被追近后撤
+func _update_ranged(delta: float, player: Node2D, _base_speed: float) -> Vector2:
+	var to_player: Vector2 = player.global_position - global_position
+	var d: float = to_player.length()
+	var move_dir: Vector2 = to_player.normalized() if d > 0.01 else Vector2.RIGHT
+	# 距离 < 80：后撤；80-120：靠近；120-160：停下射击；>160：靠近
+	if d < 80.0:
+		# 后撤；如果接近屏幕边缘则停下原地射击（PRD 5.10.4 v0.6）
+		if not _is_near_screen_edge():
+			position -= move_dir * _retreat_speed * delta * _slow_mult
+	elif d < 120.0:
+		# 速度慢移
+		position += move_dir * speed * 0.5 * delta * _slow_mult
+	elif d > 160.0:
+		# 靠近
+		position += move_dir * speed * delta * _slow_mult
+
+	# 射击计时
+	_ranged_shoot_timer -= delta
+	if _ranged_shoot_timer <= 0 and d < 320.0:
+		_ranged_shoot_timer = _shoot_interval
+		_shoot_at(player)
+
+	return move_dir
+
+
+func _is_near_screen_edge() -> bool:
+	var camera := get_viewport().get_camera_2d()
+	if not camera:
+		return false
+	var vp_size: Vector2 = get_viewport().get_visible_rect().size
+	var cam_pos: Vector2 = camera.global_position
+	var local: Vector2 = global_position - cam_pos
+	var margin: float = 100.0
+	return abs(local.x) > vp_size.x * 0.5 - margin or abs(local.y) > vp_size.y * 0.5 - margin
+
+
+func _shoot_at(player: Node2D) -> void:
+	var container := GameData.enemies_container
+	if not container or not is_instance_valid(container):
+		return
+	var dir: Vector2 = (player.global_position - global_position).normalized()
+	var proj := Node2D.new()
+	proj.set_script(preload("res://scripts/weapons/enemy_projectile.gd"))
+	proj.direction = dir
+	proj.proj_speed = 180.0
+	proj.proj_damage = damage
+	proj.proj_color = _base_modulate
+	proj.global_position = global_position + dir * (enemy_size + 4.0)
+	container.add_child(proj)
+	AudioManager.play("enemy_hit")
 
 
 func _draw() -> void:
@@ -178,6 +331,21 @@ func _draw() -> void:
 
 	if elite_type != "" and not _dying and not (reduce_detail and far_from_player):
 		_draw_elite_aura()
+
+	# 冲锋怪预警：WARNING 阶段红色闪烁圆环
+	if _behavior == "charger" and _charger_state == ChargerState.WARNING:
+		var pulse: float = (sin(Time.get_ticks_msec() * 0.025) + 1.0) * 0.5
+		draw_arc(Vector2.ZERO, enemy_size * 1.6, 0.0, TAU, 24,
+			Color(1.0, 0.2, 0.1, 0.5 + pulse * 0.4), 2.0)
+		# 冲刺方向预警箭头
+		var arrow_end: Vector2 = _charger_charge_dir * (enemy_size * 2.0)
+		draw_line(Vector2.ZERO, arrow_end, Color(1.0, 0.3, 0.1, 0.85), 2.5)
+
+	# 机制怪头顶标识符
+	if _behavior == "charger":
+		_draw_marker_exclamation()
+	elif _behavior == "ranged":
+		_draw_marker_bow()
 
 	if health < max_health and not _dying and not (reduce_detail and elite_type == "" and far_from_player):
 		var bar_w := enemy_size * 2.0
@@ -193,6 +361,26 @@ func _draw() -> void:
 			bar_color = ELITE_AURA_COLORS.get(elite_type, bar_color)
 			bar_color.a = 1.0
 		draw_rect(Rect2(-bar_w / 2, bar_y, fill_w, bar_h), bar_color)
+
+
+func _draw_marker_exclamation() -> void:
+	# 红色感叹号（高 4px，距头顶 6px）
+	var top_y: float = -enemy_size - 6.0
+	var c := Color(1.0, 0.25, 0.15, 0.95)
+	draw_rect(Rect2(-1.0, top_y - 4.0, 2.0, 3.0), c)
+	draw_rect(Rect2(-1.0, top_y, 2.0, 1.0), c)
+
+
+func _draw_marker_bow() -> void:
+	# 紫色弓箭符号（简化为三角箭头）
+	var top_y: float = -enemy_size - 6.0
+	var c := Color(0.7, 0.4, 1.0, 0.95)
+	var pts := PackedVector2Array([
+		Vector2(0, top_y - 4.0),
+		Vector2(-3.0, top_y),
+		Vector2(3.0, top_y),
+	])
+	draw_colored_polygon(pts, c)
 
 
 func _draw_elite_aura() -> void:
@@ -221,8 +409,15 @@ func take_damage(amount: float) -> void:
 	health -= effective_amount
 	_flash_timer = 0.08
 	AudioManager.play("enemy_hit")
-	if not GameData.is_low_fx_mode() or elite_type != "" or amount >= 20:
-		VfxPool.hit_flash(global_position, color, 10.0 + amount * 0.3)
+	# 普通命中 hit_flash size 砍到 8（PRD 5.9.2）；暴击/精英命中保留原强度
+	var is_crit: bool = amount >= 20
+	if not GameData.is_low_fx_mode() or elite_type != "" or is_crit:
+		var flash_size: float
+		if is_crit or elite_type != "":
+			flash_size = 10.0 + amount * 0.3
+		else:
+			flash_size = 6.0 + amount * 0.2
+		VfxPool.hit_flash(global_position, color, flash_size)
 	if health <= 0:
 		_die()
 
@@ -246,6 +441,8 @@ func _die() -> void:
 	var p = GameData.player_ref
 	if is_instance_valid(p) and p.has_method("on_enemy_killed"):
 		p.on_enemy_killed()
+		if p.has_method("spawn_soul_drain_visual"):
+			p.spawn_soul_drain_visual(global_position)
 	AudioManager.play("enemy_die")
 
 	if elite_type != "":

@@ -9,6 +9,7 @@ var _spawn_count_label: Label
 var _time_scale_slider: HSlider
 var _time_scale_label: Label
 var _weapon_buttons: Dictionary = {}
+var _boss_mode_option: OptionButton
 
 var _game_manager: Node = null
 
@@ -112,11 +113,43 @@ func _build_ui() -> void:
 	_spawn_count_label.custom_minimum_size.x = 28
 
 	for type_key in GameData.ENEMY_TYPES.keys():
+		# Boss 走专门的 Boss 生成分区，不在通用怪物生成里
+		if type_key == "boss":
+			continue
 		var data: Dictionary = GameData.ENEMY_TYPES[type_key]
 		var btn := Button.new()
 		btn.text = "> " + data["name"]
 		btn.custom_minimum_size.y = 28
 		btn.pressed.connect(_on_spawn_enemy.bind(type_key))
+		vbox.add_child(btn)
+
+	_add_sep(vbox, GameData.UI_RED, 0.4)
+	_add_section_title(vbox, "Boss 生成")
+
+	var mode_row := HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", 4)
+	vbox.add_child(mode_row)
+	var mode_lbl := _add_info_label(mode_row, "模式:")
+	mode_lbl.custom_minimum_size.x = 48
+	_boss_mode_option = OptionButton.new()
+	_boss_mode_option.add_item("完整演出 (800px)", 0)
+	_boss_mode_option.add_item("标准 (300px)", 1)
+	_boss_mode_option.add_item("即刻战斗 (跳过登场)", 2)
+	_boss_mode_option.selected = 1  # 默认标准
+	_boss_mode_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mode_row.add_child(_boss_mode_option)
+
+	for boss_id in GameData.BOSS_DATA.keys():
+		var bd: Dictionary = GameData.BOSS_DATA[boss_id]
+		var base_hp: int = int(GameData.ENEMY_TYPES["boss"]["health"] * bd.get("health_mult", 1.0))
+		var skill_short: Array = []
+		for sk in bd.get("skills", []):
+			skill_short.append(_skill_short_name(sk))
+		var btn := Button.new()
+		btn.text = "> %s (HP %d)" % [bd["name"], base_hp]
+		btn.tooltip_text = "技能: " + " / ".join(skill_short)
+		btn.custom_minimum_size.y = 28
+		btn.pressed.connect(_on_spawn_boss.bind(boss_id))
 		vbox.add_child(btn)
 
 	_add_sep(vbox, GameData.UI_BORDER, 0.3)
@@ -338,6 +371,28 @@ func _on_spawn_enemy(type_key: String) -> void:
 	var difficulty := GameData.get_difficulty_multiplier(GameData.elapsed_time)
 	for i in range(count):
 		_game_manager._debug_spawn_single(type_key, difficulty)
+
+
+func _on_spawn_boss(boss_id: String) -> void:
+	if not _game_manager:
+		return
+	var modes := ["full", "standard", "instant"]
+	var idx: int = clampi(_boss_mode_option.selected, 0, modes.size() - 1)
+	_game_manager._debug_spawn_boss_specific(boss_id, modes[idx])
+
+
+func _skill_short_name(sk: String) -> String:
+	match sk:
+		"bone_spike": return "骨刺"
+		"summon_skeleton": return "召唤"
+		"charge": return "冲锋"
+		"soul_barrage": return "弹幕"
+		"phantom_split": return "分身"
+		"dark_field": return "暗域"
+		"moon_wrath": return "月怒"
+		"summon_elite": return "精英"
+		"undying": return "不死"
+	return sk
 
 
 func _on_weapon_btn(wt: int) -> void:

@@ -98,9 +98,16 @@ func _spawn_normal_wave(time: float) -> void:
 
 	var count := _get_spawn_count(time)
 	var difficulty := GameData.get_difficulty_multiplier(time)
-
 	for i in range(count):
-		var type := _get_enemy_type(time)
+		var type: String
+		# 自由模式 5min 后 15% 概率混入机制怪（PRD 5.10.3，不计入 -20% 统计）
+		if time >= 300.0 and randf() < 0.15:
+			type = ["charger", "ranged"].pick_random()
+		else:
+			# 普通怪 5min 后 -20% 概率跳过（PRD 5.6）
+			if time >= 300.0 and randf() < 0.20:
+				continue
+			type = _get_enemy_type(time)
 		_spawn_enemy(type, player.global_position, difficulty)
 
 

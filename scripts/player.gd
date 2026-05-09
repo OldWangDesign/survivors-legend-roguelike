@@ -61,6 +61,14 @@ var _divine_ready: bool = true
 # Passive state for HUD display
 var passive_status: String = ""
 
+# 被动视觉计时器（PRD 5.2）
+var _shield_flash_timer: float = 0.0   # iron_wall 受击闪亮
+var _life_spring_visual_timer: float = 0.0  # sweetie 回血 "+1" 持续 0.5s
+var _level_up_flash_timer: float = 0.0  # 升级金色发光 0.3s
+var _aura_phase: float = 0.0  # 通用旋转相位（princess 环绕等）
+var _arc_phase: float = 0.0  # cyber 电弧抖动相位
+var _arc_seed: float = 0.0  # cyber 电弧 seed
+
 
 func _ready() -> void:
 	add_to_group("player")
@@ -71,7 +79,7 @@ func _ready() -> void:
 	_apply_character_data()
 
 	current_health = max_health
-	z_index = 1
+	z_index = GameData.Z_PLAYER
 
 	_sprite = Sprite2D.new()
 	var frames: Array = GameData.sprites.get("player", [])
@@ -175,8 +183,25 @@ func _physics_process(delta: float) -> void:
 		_sprite.modulate = Color(3, 3, 3)
 	elif invincible:
 		_sprite.modulate.a = 0.5 + 0.5 * sin(_invincible_timer * 20.0)
+	elif _level_up_flash_timer > 0:
+		# 升级金色发光
+		var lu_t: float = _level_up_flash_timer / 0.3
+		_sprite.modulate = Color(1.0, 1.0, 1.0).lerp(Color(2.0, 1.7, 0.6), lu_t)
+	elif _passive == "bloodthirst" and _bt_stacks >= 3:
+		# 嗜血 3 层身体微红染色
+		_sprite.modulate = Color(1.15, 0.8, 0.8)
 	else:
 		_sprite.modulate = Color.WHITE
+
+	# 推进各类被动视觉计时器/相位
+	_aura_phase += delta
+	_arc_phase += delta
+	if _shield_flash_timer > 0:
+		_shield_flash_timer -= delta
+	if _life_spring_visual_timer > 0:
+		_life_spring_visual_timer -= delta
+	if _level_up_flash_timer > 0:
+		_level_up_flash_timer -= delta
 
 	_collect_gems()
 	_collect_chests()
@@ -185,9 +210,25 @@ func _physics_process(delta: float) -> void:
 
 func _draw() -> void:
 	draw_circle(Vector2(2, 3), hit_radius * 0.7, Color(0, 0, 0, 0.2))
-	var marker_radius := hit_radius * _visual_scale * 1.15
+	# 识别环不跟随视觉缩放（PRD 5.1）：跟物理一致比跟视觉一致更有用
+	var marker_radius := hit_radius * 1.15
 	draw_circle(Vector2.ZERO, marker_radius, Color(0.2, 0.65, 1.0, GameData.PLAYER_MARKER_ALPHA * 0.35))
 	draw_arc(Vector2.ZERO, marker_radius, 0.0, TAU, 32, Color(0.35, 0.85, 1.0, GameData.PLAYER_MARKER_ALPHA), 2.0)
+
+	# 被动视觉（PRD 5.2）
+	_draw_passive_visual()
+
+	# 低血量红色脉动（PRD 5.2.2）：< 30% 时呼吸光，无敌期间避让
+	var hp_ratio: float = float(current_health) / float(maxi(max_health, 1))
+	if hp_ratio < 0.3 and not invincible and current_health > 0:
+		var freq: float = 5.0 + (1.0 - hp_ratio / 0.3) * 8.0  # 越低频率越快
+		var alpha: float = 0.25 + 0.25 * sin(_aura_phase * freq)
+		draw_circle(Vector2.ZERO, hit_radius * 1.5, Color(1.0, 0.1, 0.1, alpha))
+
+	# 升级金色发光（PRD 5.2.2）：包裹一层金色环
+	if _level_up_flash_timer > 0:
+		var lu_t: float = _level_up_flash_timer / 0.3
+		draw_circle(Vector2.ZERO, hit_radius * (1.5 + (1.0 - lu_t) * 0.6), Color(1.0, 0.85, 0.3, lu_t * 0.45))
 
 	# Health bar above head (same style as enemies)
 	var bar_w := hit_radius * 2.5
@@ -200,6 +241,101 @@ func _draw() -> void:
 	draw_rect(Rect2(-bar_w / 2, bar_y, fill_w, bar_h), bar_color)
 
 
+func _draw_passive_visual() -> void:
+	match _passive:
+		"survival_instinct":
+			# 求生本能：低血量时白色风速线（沿移动反方向）
+			var ratio: float = float(current_health) / float(maxi(max_health, 1))
+			if ratio < 0.3:
+				var back := -facing
+				for i in range(3):
+					var off: float = float(i) - 1.0
+					var perp := Vector2(-back.y, back.x) * (off * 5.0)
+					var center := perp + back * (hit_radius * 0.4)
+					var arc_color := Color(1.0, 1.0, 1.0, 0.5)
+					draw_arc(center, hit_radius * (0.6 + i * 0.08),
+						back.angle() - 0.6, back.angle() + 0.6, 8, arc_color, 1.5)
+		"iron_wall":
+			# 铁壁：淡蓝六边形护盾轮廓（常驻），受击瞬间闪亮
+			var alpha: float = 0.25
+			if _shield_flash_timer > 0:
+				alpha = 0.6 * (_shield_flash_timer / 0.15) + 0.25
+			var hex_r: float = hit_radius * 1.55
+			for i in range(6):
+				var a1: float = TAU * float(i) / 6.0
+				var a2: float = TAU * float(i + 1) / 6.0
+				var p1: Vector2 = Vector2(cos(a1), sin(a1)) * hex_r
+				var p2: Vector2 = Vector2(cos(a2), sin(a2)) * hex_r
+				draw_line(p1, p2, Color(0.45, 0.7, 1.0, alpha), 1.8)
+		"eagle_eye":
+			# 鹰眼：沿 facing 方向的淡绿色十字准星
+			var dist: float = hit_radius * 2.0
+			var center: Vector2 = facing * dist
+			var size_h: float = 5.0
+			var c := Color(0.5, 1.0, 0.4, 0.35)
+			draw_line(center + Vector2(-size_h, 0), center + Vector2(size_h, 0), c, 1.5)
+			draw_line(center + Vector2(0, -size_h), center + Vector2(0, size_h), c, 1.5)
+			draw_arc(center, size_h * 1.2, 0.0, TAU, 12, c, 1.0)
+		"bloodthirst":
+			# 嗜血：1-3 层红色火焰环，半径递增
+			if _bt_stacks > 0:
+				for i in range(_bt_stacks):
+					var ring_r: float = hit_radius * (1.2 + float(i) * 0.25)
+					var ring_a: float = 0.25 + float(i) * 0.18
+					var pulse: float = sin(_aura_phase * 3.0 + i) * 0.1 + 1.0
+					draw_arc(Vector2.ZERO, ring_r * pulse, 0.0, TAU, 28,
+						Color(1.0, 0.25, 0.1, ring_a), 2.0)
+		"mana_surge":
+			# 魔力涌动：最后 3s 紫色粒子向内汇聚（用 _draw 模拟）
+			if _mana_surge_timer > 0 and _mana_surge_timer <= 3.0:
+				var charge_t: float = 1.0 - _mana_surge_timer / 3.0  # 0 -> 1
+				for i in range(8):
+					var ang: float = TAU * float(i) / 8.0 + _aura_phase * 1.5
+					var radius: float = hit_radius * (2.5 - charge_t * 1.8)
+					var p: Vector2 = Vector2(cos(ang), sin(ang)) * radius
+					draw_circle(p, 2.0, Color(0.7, 0.3, 1.0, 0.3 + charge_t * 0.5))
+		"life_spring":
+			# 生命之泉：回血时绿色十字 + "+1" 自管理小字 0.5s
+			if _life_spring_visual_timer > 0:
+				var t: float = _life_spring_visual_timer / 0.5
+				var rise: float = (1.0 - t) * 8.0
+				var pos := Vector2(0, -hit_radius - 4.0 - rise)
+				var c := Color(0.4, 1.0, 0.5, t)
+				draw_line(pos + Vector2(-4, 0), pos + Vector2(4, 0), c, 2.0)
+				draw_line(pos + Vector2(0, -4), pos + Vector2(0, 4), c, 2.0)
+				var font: Font = ThemeDB.fallback_font
+				draw_string(font, pos + Vector2(6, 4), "+1", HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
+					Color(0.6, 1.0, 0.6, t))
+		"overclock":
+			# 超频：激活后青色电弧锯齿线
+			if _overclock_active:
+				for s in range(3):
+					var seed_offset: float = floor(_arc_phase * 30.0) + float(s) * 17.0
+					var pts := PackedVector2Array()
+					var seg_count := 6
+					var base_a: float = TAU * float(s) / 3.0 + _arc_phase * 1.2
+					var ang_span: float = 0.7
+					for i in range(seg_count + 1):
+						var f: float = float(i) / float(seg_count)
+						var ang: float = base_a + (f - 0.5) * ang_span
+						var noise: float = sin(seed_offset + i * 13.7) * 3.0
+						var r: float = hit_radius * 1.5 + noise
+						pts.append(Vector2(cos(ang), sin(ang)) * r)
+					for i in range(pts.size() - 1):
+						draw_line(pts[i], pts[i + 1], Color(0.4, 0.9, 1.0, 0.85), 1.4)
+		"divine_protection":
+			# 神圣庇护：就绪态金色光点缓慢环绕脚底环
+			if _divine_ready:
+				var orbit_r: float = hit_radius * 1.3
+				for i in range(3):
+					var ang: float = _aura_phase * 1.0 + TAU * float(i) / 3.0
+					var p := Vector2(cos(ang), sin(ang)) * orbit_r + Vector2(0, 2)
+					draw_circle(p, 2.5, Color(1.0, 0.92, 0.5, 0.85))
+					draw_circle(p, 4.0, Color(1.0, 0.85, 0.3, 0.25))
+		_:
+			pass
+
+
 func take_damage(amount: int) -> void:
 	if invincible:
 		return
@@ -207,6 +343,7 @@ func take_damage(amount: int) -> void:
 	var actual_f := float(maxi(amount - armor, 1))
 	if _passive == "iron_wall":
 		actual_f *= 0.8
+		_shield_flash_timer = 0.15  # 受击闪亮
 	var actual := maxi(int(actual_f), 1)
 	current_health -= actual
 	current_health = maxi(current_health, 0)
@@ -217,7 +354,10 @@ func take_damage(amount: int) -> void:
 		_divine_ready = false
 		_divine_cd = 60.0
 		passive_status = "冷却 60s"
-		VfxPool.screen_flash(Color(1, 1, 0.8, 0.4), 0.2)
+		# 触发：金色全屏爆闪 + 冲击波
+		VfxPool.screen_flash(Color(1.0, 0.85, 0.3, 0.5), 0.3)
+		VfxPool.ring_wave(global_position, GameData.UI_GOLD, hit_radius * 6.0, 0.5, 4.0)
+		VfxPool.spark_burst(global_position, 16, GameData.UI_GOLD, 180.0, 0.5)
 
 	invincible = true
 	_invincible_timer = INVINCIBLE_DURATION
@@ -260,6 +400,9 @@ func add_xp(amount: int) -> void:
 		area_mult += 0.005
 		cooldown_mult = maxf(0.3, cooldown_mult - 0.003)
 		AudioManager.play("level_up")
+		# 升级金色闪光（PRD 5.2.2）：全身金色 0.3s + ring_wave
+		_level_up_flash_timer = 0.3
+		VfxPool.ring_wave(global_position, GameData.UI_GOLD, hit_radius * 4.0, 0.4, 3.0)
 		leveled_up.emit(level)
 		needed = GameData.get_xp_for_level(level)
 	xp_changed.emit(xp, needed, level)
@@ -288,6 +431,7 @@ func _update_passives(delta: float) -> void:
 			_life_spring_timer = 5.0
 			if current_health < max_health:
 				heal(1)
+				_life_spring_visual_timer = 0.5
 		passive_status = "每5秒+1"
 
 	# Divine Protection cooldown
@@ -310,6 +454,9 @@ func _update_passives(delta: float) -> void:
 
 
 func _trigger_mana_surge() -> void:
+	# 释放瞬间紫色冲击波（PRD 5.2 #6）
+	VfxPool.ring_wave(global_position, Color(0.7, 0.3, 1.0), hit_radius * 5.0, 0.4, 3.5)
+	VfxPool.spark_burst(global_position, 10, Color(0.7, 0.3, 1.0), 140.0, 0.4)
 	for w in weapons:
 		var node = w.get("node")
 		if node and is_instance_valid(node) and node.has_method("force_attack"):
@@ -327,6 +474,20 @@ func on_enemy_killed() -> void:
 			_bt_kill_counter = 0
 			_bt_stacks = mini(_bt_stacks + 1, 3)
 			_bt_timer = 5.0
+
+
+# 灵魂汲取：紫色小灵魂飞向主角（PRD 5.2 #9，飞行需 is_instance_valid 检查）
+func spawn_soul_drain_visual(from_pos: Vector2) -> void:
+	if _passive != "soul_drain":
+		return
+	var scene := get_tree().current_scene
+	if not scene:
+		return
+	var soul := Node2D.new()
+	soul.set_script(preload("res://scripts/vfx/soul_orb.gd"))
+	soul.global_position = from_pos
+	soul.z_index = GameData.Z_VFX_HIGH
+	scene.add_child(soul)
 
 
 func get_effective_damage_mult() -> float:
@@ -480,6 +641,9 @@ func _collect_gems() -> void:
 		if dist_sq < collect_range_sq:
 			add_xp(gem.xp_value)
 			AudioManager.play("xp_pickup")
+			# PICO-8 复古幸运：拾取经验球时金色 spark（事件触发，PRD 5.2 #3）
+			if _passive == "retro_luck":
+				VfxPool.spark_burst(global_position, 3, GameData.UI_GOLD, 60.0, 0.3)
 			gem.queue_free()
 		elif dist_sq < attract_range_sq:
 			gem.start_attract(global_position)

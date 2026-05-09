@@ -60,7 +60,9 @@ func _physics_process(delta: float) -> void:
 			if piercing:
 				_hit_enemies.append(enemy)
 			else:
-				VfxPool.spark_burst(global_position, 5 if GameData.is_low_fx_mode() else 8, color, 80.0, 0.25)
+				# 普通武器命中 spark_burst 砍到 3（PRD 5.9.2）
+				var spark_count: int = 2 if GameData.is_low_fx_mode() else 3
+				VfxPool.spark_burst(global_position, spark_count, color, 80.0, 0.25)
 				if not GameData.is_low_fx_mode():
 					VfxPool.ring_wave(global_position, color, 25.0, 0.15, 2.0)
 				queue_free()
@@ -91,4 +93,4 @@ func _draw() -> void:
 func _spawn_damage_number(pos: Vector2, dmg: int) -> void:
 	var is_crit := dmg >= 20
 	var col := Color.GOLD if is_crit else Color(1, 0.9, 0.7)
-	VfxPool.float_text(pos + Vector2(randf_range(-5, 5), -10), str(dmg), col, 16.0, is_crit)
+	VfxPool.float_text(pos + Vector2(randf_range(-3, 3), -10), str(dmg), col, 16.0, is_crit)

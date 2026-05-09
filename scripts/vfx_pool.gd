@@ -38,7 +38,7 @@ func hit_flash(pos: Vector2, color: Color = Color.WHITE, size: float = 12.0) -> 
 	fx.global_position = pos
 	fx.set_meta("fx_color", color)
 	fx.set_meta("fx_size", size)
-	fx.z_index = 10
+	fx.z_index = GameData.Z_VFX_HIGH
 	scene.add_child(fx)
 	_particles.append(fx)
 
@@ -57,7 +57,7 @@ func screen_flash(color: Color = Color(1, 1, 1, 0.3), duration: float = 0.08) ->
 		flash_color.a *= 0.55
 		flash_duration = minf(duration, 0.12)
 	var layer := CanvasLayer.new()
-	layer.layer = 100
+	layer.layer = GameData.Z_SCREEN_FLASH
 	layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	layer.set_meta("_flash_created_ms", Time.get_ticks_msec())
 	var rect := ColorRect.new()
@@ -93,7 +93,7 @@ func spark_burst(pos: Vector2, count: int, color: Color, spread: float = 80.0, l
 		fx.set_meta("fx_color", color)
 		fx.set_meta("lifetime", lifetime)
 		fx.set_meta("max_life", lifetime)
-		fx.z_index = 8
+		fx.z_index = GameData.Z_VFX_MID + 1
 		scene.add_child(fx)
 		_particles.append(fx)
 
@@ -111,7 +111,7 @@ func ring_wave(pos: Vector2, color: Color, max_radius: float = 60.0, duration: f
 	fx.set_meta("max_radius", max_radius)
 	fx.set_meta("duration", duration)
 	fx.set_meta("width", width)
-	fx.z_index = 7
+	fx.z_index = GameData.Z_VFX_MID
 	scene.add_child(fx)
 	_particles.append(fx)
 
@@ -131,7 +131,7 @@ func trail_attach(target: Node2D, color: Color, length: int = 8, width: float = 
 	trail.set_meta("trail_color", color)
 	trail.set_meta("trail_length", length)
 	trail.set_meta("trail_width", width)
-	trail.z_index = 5
+	trail.z_index = GameData.Z_TRAIL
 	scene.add_child(trail)
 	_trail_nodes.append(trail)
 	return trail
@@ -151,7 +151,7 @@ func line_attack(pos: Vector2, dir: Vector2, length: float, width: float, color:
 	fx.set_meta("fx_width", width)
 	fx.set_meta("fx_color", color)
 	fx.set_meta("fx_duration", duration)
-	fx.z_index = 6
+	fx.z_index = GameData.Z_VFX_MID - 1
 	scene.add_child(fx)
 	_particles.append(fx)
 
@@ -171,7 +171,7 @@ func float_text(pos: Vector2, text: String, color: Color, size: float = 16.0, is
 	fx.set_meta("fx_color", color)
 	fx.set_meta("font_size", size)
 	fx.set_meta("is_crit", is_crit)
-	fx.z_index = 20
+	fx.z_index = GameData.Z_FLOAT_TEXT
 	scene.add_child(fx)
 	_float_texts.append(fx)
 
@@ -205,7 +205,8 @@ func _can_spawn_float_text(is_crit: bool) -> bool:
 
 	var cap: int = GameData.get_float_text_cap()
 	var rate_cap: int = GameData.get_float_text_per_second()
-	if _float_texts.size() >= cap:
+	# 暴击双重豁免（PRD 5.3 修复）：同屏总数和每秒速率都要豁免
+	if _float_texts.size() >= cap and not is_crit:
 		return false
 	if _float_text_count_in_window >= rate_cap and not is_crit:
 		return false
