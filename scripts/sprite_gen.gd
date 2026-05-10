@@ -33,10 +33,38 @@ const _GH := Color(0.45, 0.28, 0.72)
 const _GH_HI := Color(0.65, 0.45, 0.88)
 const _GH_DK := Color(0.28, 0.15, 0.48)
 
-# --- Boss palette ---
+# --- Boss palette (legacy 通用) ---
 const _BOSS_R := Color(0.78, 0.18, 0.18)
 const _BOSS_DK := Color(0.50, 0.10, 0.10)
 const _BOSS_PK := Color(0.90, 0.35, 0.30)
+
+# --- Bone Lord palette（骨白 + 金王冠 + 红宝石）---
+const _BL_BONE := Color(0.92, 0.88, 0.72)
+const _BL_BONE_DK := Color(0.62, 0.55, 0.40)
+const _BL_BONE_HI := Color(1.0, 0.96, 0.85)
+const _BL_GOLD := Color(0.98, 0.78, 0.18)
+const _BL_GOLD_DK := Color(0.62, 0.45, 0.10)
+const _BL_GEM := Color(0.92, 0.18, 0.22)
+const _BL_EYE := Color(1.0, 0.32, 0.18)
+
+# --- Shadow Lich palette（紫袍兜帽 + 紫光眼 + 紫法球）---
+const _SL_ROBE := Color(0.45, 0.20, 0.65)
+const _SL_ROBE_DK := Color(0.26, 0.08, 0.40)
+const _SL_ROBE_HI := Color(0.68, 0.42, 0.88)
+const _SL_FACE := Color(0.08, 0.02, 0.15)
+const _SL_EYE := Color(0.92, 0.62, 1.0)
+const _SL_ORB := Color(0.78, 0.40, 0.95)
+const _SL_ORB_HI := Color(1.0, 0.85, 1.0)
+
+# --- Blood Moon palette（血月圆 + 暗红恶魔头 + 白光十字眼）---
+const _BM_MOON := Color(0.58, 0.06, 0.12)
+const _BM_MOON_HI := Color(0.85, 0.14, 0.20)
+const _BM_DEMON := Color(0.30, 0.02, 0.05)
+const _BM_DEMON_HI := Color(0.55, 0.10, 0.15)
+const _BM_HORN := Color(0.12, 0.04, 0.06)
+const _BM_EYE := Color(1.0, 0.98, 0.85)
+const _BM_FANG := Color(0.95, 0.92, 0.78)
+const _BM_CRACK := Color(0.20, 0.02, 0.05)
 
 const _WHITE := Color(0.92, 0.92, 0.96)
 const _BLACK := Color(0.04, 0.04, 0.08)
@@ -51,6 +79,9 @@ static func generate_all() -> Dictionary:
 		"zombie": [_gen_zombie(0), _gen_zombie(1)],
 		"ghost": [_gen_ghost(0), _gen_ghost(1)],
 		"boss": [_gen_boss(0), _gen_boss(1)],
+		"boss_bone_lord": [_gen_bone_lord(0), _gen_bone_lord(1)],
+		"boss_shadow_lich": [_gen_shadow_lich(0), _gen_shadow_lich(1)],
+		"boss_blood_moon": [_gen_blood_moon(0), _gen_blood_moon(1)],
 		"gem_small": _gen_gem(
 			Color(0.20, 0.75, 0.30), Color(0.45, 0.95, 0.55), Color(0.10, 0.45, 0.15)),
 		"gem_medium": _gen_gem(
@@ -272,6 +303,14 @@ static func _gen_ghost(frame: int) -> ImageTexture:
 #  Boss - Demon Skull (24x24)
 # ============================================================
 
+static func gen_boss_for(boss_id: String, frame: int) -> ImageTexture:
+	match boss_id:
+		"bone_lord": return _gen_bone_lord(frame)
+		"shadow_lich": return _gen_shadow_lich(frame)
+		"blood_moon": return _gen_blood_moon(frame)
+	return _gen_boss(frame)
+
+
 static func _gen_boss(frame: int) -> ImageTexture:
 	var img := _img(24, 24)
 
@@ -306,6 +345,235 @@ static func _gen_boss(frame: int) -> ImageTexture:
 	for x in range(8, 15, 2):
 		_px(img, x, 16, _WHITE)
 		_px(img, x, 17, _BONE_DK)
+
+	_outline(img)
+	return ImageTexture.create_from_image(img)
+
+
+# ============================================================
+#  Bone Lord (24x24) — 骷髅头 + 金王冠 + 红宝石眼
+# ============================================================
+
+static func _gen_bone_lord(frame: int) -> ImageTexture:
+	var img := _img(24, 24)
+
+	# 头骨主体（椭圆）
+	_ellipse(img, 11, 12, 10, 7, _BL_BONE)
+	# 顶部高光
+	_ellipse(img, 11, 9, 8, 4, _BL_BONE_HI)
+	# 下颌阴影
+	_ellipse(img, 11, 15, 9, 4, _BL_BONE_DK)
+	# 重新覆盖主体保持轮廓
+	_ellipse(img, 11, 12, 10, 7, _BL_BONE)
+	_ellipse(img, 11, 10, 8, 4, _BL_BONE_HI)
+
+	# 王冠基底（横条 + 顶部金亮）
+	_fill(img, 4, 3, 16, 2, _BL_GOLD)
+	_fill(img, 4, 3, 16, 1, _BL_GOLD_DK)
+	# 王冠左尖
+	_fill(img, 5, 1, 2, 2, _BL_GOLD)
+	_px(img, 5, 1, _BL_GOLD_DK)
+	# 王冠中尖（最高 + 红宝石）
+	_fill(img, 10, 0, 4, 3, _BL_GOLD)
+	_px(img, 10, 0, _BL_GOLD_DK); _px(img, 13, 0, _BL_GOLD_DK)
+	_px(img, 11, 1, _BL_GEM); _px(img, 12, 1, _BL_GEM)
+	# 王冠右尖
+	_fill(img, 17, 1, 2, 2, _BL_GOLD)
+	_px(img, 18, 1, _BL_GOLD_DK)
+	# 王冠基底两侧小宝石
+	_px(img, 7, 3, _BL_GEM)
+	_px(img, 16, 3, _BL_GEM)
+
+	# 眼眶（黑色凹陷）
+	_fill(img, 4, 8, 5, 4, _BLACK)
+	_fill(img, 15, 8, 5, 4, _BLACK)
+	# 眼眶红光
+	_fill(img, 5, 9, 3, 2, _BL_EYE)
+	_fill(img, 16, 9, 3, 2, _BL_EYE)
+	# 红光高亮核心
+	_px(img, 6, 9, _WHITE); _px(img, 17, 9, _WHITE)
+
+	# 鼻骨（倒三角黑空）
+	_px(img, 11, 12, _BLACK); _px(img, 12, 12, _BLACK)
+	_fill(img, 11, 13, 2, 2, _BLACK)
+	_px(img, 11, 15, _BLACK)
+
+	# 颧骨阴影线
+	_px(img, 4, 13, _BL_BONE_DK)
+	_px(img, 19, 13, _BL_BONE_DK)
+
+	# 上颚分隔
+	_fill(img, 4, 16, 16, 1, _BL_BONE_DK)
+
+	# 上颚牙齿（7 颗，frame 1 张嘴时下移）
+	var upper_y: int = 17 if frame == 0 else 16
+	for i in range(7):
+		var tx: int = 5 + i * 2
+		_px(img, tx, upper_y, _BL_BONE_HI)
+		_px(img, tx, upper_y + 1, _BL_BONE)
+
+	# 下颚（frame 0 闭合 / frame 1 张开露黑口腔）
+	if frame == 0:
+		_fill(img, 5, 19, 14, 2, _BL_BONE)
+		_fill(img, 6, 21, 12, 1, _BL_BONE_DK)
+		# 下颚牙齿
+		for i in range(6):
+			var tx2: int = 6 + i * 2
+			_px(img, tx2, 19, _BL_BONE_HI)
+	else:
+		# 张开：黑色口腔 + 下颚下移 2px
+		_fill(img, 5, 18, 14, 2, _BLACK)
+		_fill(img, 6, 20, 12, 2, _BL_BONE)
+		_fill(img, 7, 22, 10, 1, _BL_BONE_DK)
+		# 下颚牙齿（更长）
+		for i in range(5):
+			var tx3: int = 7 + i * 2
+			_px(img, tx3, 20, _BL_BONE_HI)
+			_px(img, tx3, 21, _BL_BONE)
+
+	_outline(img)
+	return ImageTexture.create_from_image(img)
+
+
+# ============================================================
+#  Shadow Lich (24x24) — 兜帽袍 + 紫光眼 + 浮空法球
+# ============================================================
+
+static func _gen_shadow_lich(frame: int) -> ImageTexture:
+	var img := _img(24, 24)
+
+	# 兜帽尖（梯形向上收）
+	_fill(img, 10, 0, 4, 2, _SL_ROBE)
+	_fill(img, 9, 2, 6, 1, _SL_ROBE)
+	_fill(img, 8, 3, 8, 2, _SL_ROBE)
+	_fill(img, 7, 5, 10, 2, _SL_ROBE)
+
+	# 兜帽边缘高光（顶部）
+	_fill(img, 10, 0, 4, 1, _SL_ROBE_HI)
+	_px(img, 9, 2, _SL_ROBE_HI)
+	_px(img, 14, 2, _SL_ROBE_HI)
+
+	# 兜帽两侧（再向外扩一点）
+	_fill(img, 6, 7, 12, 1, _SL_ROBE)
+
+	# 脸阴影（兜帽内黑色凹陷）
+	_fill(img, 8, 7, 8, 5, _SL_FACE)
+
+	# 紫光眼（左右两个）
+	_fill(img, 9, 9, 2, 2, _SL_EYE)
+	_fill(img, 13, 9, 2, 2, _SL_EYE)
+	# 内眼瞳更亮
+	_px(img, 10, 9, _WHITE)
+	_px(img, 13, 9, _WHITE)
+
+	# 袍子主体（向下扩展）
+	_fill(img, 6, 12, 12, 2, _SL_ROBE)
+	_fill(img, 5, 14, 14, 2, _SL_ROBE)
+	_fill(img, 4, 16, 16, 3, _SL_ROBE)
+	_fill(img, 3, 19, 18, 2, _SL_ROBE)
+
+	# 袍子中线阴影（正面褶皱）
+	_fill(img, 11, 13, 2, 8, _SL_ROBE_DK)
+
+	# 袍子左肩高光
+	_fill(img, 5, 15, 1, 4, _SL_ROBE_HI)
+	# 袍子右肩阴影
+	_fill(img, 18, 15, 1, 4, _SL_ROBE_DK)
+
+	# 袍子下摆（不规则三尖）
+	_fill(img, 3, 21, 3, 1, _SL_ROBE)
+	_fill(img, 4, 22, 1, 1, _SL_ROBE_DK)
+	_fill(img, 8, 21, 4, 1, _SL_ROBE)
+	_fill(img, 9, 22, 2, 1, _SL_ROBE_DK)
+	_fill(img, 14, 21, 3, 1, _SL_ROBE)
+	_fill(img, 18, 21, 3, 1, _SL_ROBE)
+	_fill(img, 19, 22, 1, 1, _SL_ROBE_DK)
+
+	# 法球（左右浮空）— frame 0 小 / frame 1 大且亮
+	if frame == 0:
+		_px(img, 1, 14, _SL_ORB)
+		_px(img, 22, 14, _SL_ORB)
+	else:
+		_fill(img, 1, 13, 2, 3, _SL_ORB)
+		_fill(img, 21, 13, 2, 3, _SL_ORB)
+		_px(img, 1, 14, _SL_ORB_HI)
+		_px(img, 22, 14, _SL_ORB_HI)
+
+	_outline(img)
+	return ImageTexture.create_from_image(img)
+
+
+# ============================================================
+#  Blood Moon (24x24) — 血月圆背景 + 恶魔头 + 弯角 + 白光十字眼
+# ============================================================
+
+static func _gen_blood_moon(frame: int) -> ImageTexture:
+	var img := _img(24, 24)
+
+	# 血月圆（背景）
+	_ellipse(img, 11, 11, 11, 11, _BM_MOON)
+	# 月内亮带（偏上偏左）
+	_ellipse(img, 9, 8, 5, 4, _BM_MOON_HI)
+	# 月外圈再压一遍保持外缘统一暗红
+	for x in range(24):
+		for y in range(24):
+			var dx := float(x) - 11.0
+			var dy := float(y) - 11.0
+			var d := dx * dx + dy * dy
+			if d > 80.0 and d <= 121.0:
+				img.set_pixel(x, y, _BM_MOON)
+
+	# frame 1 月圆裂纹（3 条暗红裂痕）
+	if frame == 1:
+		# 裂纹 1（左上）
+		_px(img, 4, 5, _BM_CRACK); _px(img, 5, 6, _BM_CRACK)
+		_px(img, 5, 7, _BM_CRACK); _px(img, 6, 8, _BM_CRACK)
+		# 裂纹 2（右）
+		_px(img, 18, 6, _BM_CRACK); _px(img, 18, 7, _BM_CRACK)
+		_px(img, 19, 8, _BM_CRACK); _px(img, 19, 9, _BM_CRACK)
+		# 裂纹 3（下）
+		_px(img, 7, 19, _BM_CRACK); _px(img, 8, 20, _BM_CRACK)
+		_px(img, 9, 20, _BM_CRACK); _px(img, 10, 21, _BM_CRACK)
+
+	# 双角（向后翘 = 头顶向左右后侧延伸）
+	# 左角
+	_px(img, 6, 5, _BM_HORN); _px(img, 5, 5, _BM_HORN)
+	_px(img, 4, 5, _BM_HORN); _px(img, 4, 4, _BM_HORN)
+	_px(img, 3, 4, _BM_HORN); _px(img, 3, 3, _BM_HORN)
+	_px(img, 2, 3, _BM_HORN)
+	# 右角
+	_px(img, 17, 5, _BM_HORN); _px(img, 18, 5, _BM_HORN)
+	_px(img, 19, 5, _BM_HORN); _px(img, 19, 4, _BM_HORN)
+	_px(img, 20, 4, _BM_HORN); _px(img, 20, 3, _BM_HORN)
+	_px(img, 21, 3, _BM_HORN)
+
+	# 恶魔头（前景）
+	_ellipse(img, 11, 13, 6, 5, _BM_DEMON)
+	# 恶魔头高光
+	_ellipse(img, 11, 11, 4, 2, _BM_DEMON_HI)
+
+	# 眼睛（白色十字光）— frame 0 中央 / frame 1 微微闪烁向上
+	var ey: int = 12 if frame == 0 else 11
+	# 左眼十字
+	_fill(img, 7, ey, 3, 1, _BM_EYE)
+	_px(img, 8, ey - 1, _BM_EYE)
+	_px(img, 8, ey + 1, _BM_EYE)
+	# 右眼十字
+	_fill(img, 13, ey, 3, 1, _BM_EYE)
+	_px(img, 14, ey - 1, _BM_EYE)
+	_px(img, 14, ey + 1, _BM_EYE)
+
+	# 嘴部 + 獠牙
+	_fill(img, 8, 15, 7, 2, _BLACK)
+	# 4 颗獠牙（左右两组）
+	_px(img, 8, 16, _BM_FANG)
+	_px(img, 9, 17, _BM_FANG)
+	_px(img, 13, 17, _BM_FANG)
+	_px(img, 14, 16, _BM_FANG)
+
+	# 下颌阴影
+	_px(img, 7, 17, _BM_DEMON)
+	_px(img, 15, 17, _BM_DEMON)
 
 	_outline(img)
 	return ImageTexture.create_from_image(img)

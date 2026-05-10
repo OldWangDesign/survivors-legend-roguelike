@@ -15,7 +15,8 @@ const STYLES := {
 	"style_j_princess": "J - 公主婚礼",
 }
 
-const _ANIMATED := ["player", "bat", "skeleton", "zombie", "ghost", "boss"]
+const _ANIMATED := ["player", "bat", "skeleton", "zombie", "ghost", "boss",
+	"boss_bone_lord", "boss_shadow_lich", "boss_blood_moon"]
 const _SINGLE := ["gem_small", "gem_medium", "gem_large", "projectile"]
 
 

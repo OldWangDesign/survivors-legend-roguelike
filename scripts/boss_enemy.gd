@@ -81,7 +81,10 @@ func setup_boss(id: String, difficulty_mult: float = 1.0) -> void:
 		_skill_timers[sk_name] = cd * 0.5
 
 	_sprite = Sprite2D.new()
-	var sprite_data = GameData.sprites.get("boss")
+	# 按 boss_id 取专属 sprite，找不到再回落到通用 "boss"
+	var sprite_data = GameData.sprites.get("boss_" + boss_id)
+	if sprite_data == null:
+		sprite_data = GameData.sprites.get("boss")
 	if sprite_data is Array and sprite_data.size() > 0:
 		_sprite.texture = sprite_data[0]
 	elif sprite_data is ImageTexture:
@@ -170,7 +173,9 @@ func _physics_process(delta: float) -> void:
 	if _anim_timer >= ANIM_SPEED:
 		_anim_timer -= ANIM_SPEED
 		_anim_frame = 1 - _anim_frame
-		var anim_data = GameData.sprites.get("boss")
+		var anim_data = GameData.sprites.get("boss_" + boss_id)
+		if anim_data == null:
+			anim_data = GameData.sprites.get("boss")
 		if anim_data is Array and _anim_frame < anim_data.size():
 			_sprite.texture = anim_data[_anim_frame]
 

@@ -489,6 +489,14 @@ func _load_sprites(style: String) -> void:
 	sprites = preload("res://scripts/sprite_loader.gd").load_all(style)
 	if sprites.is_empty():
 		sprites = _generate_style_sprites(style)
+	# 3 个具体 Boss sprite 兜底：style 文件夹和 style 生成器都不一定提供，统一程序化补
+	for boss_id in ["bone_lord", "shadow_lich", "blood_moon"]:
+		var key: String = "boss_" + boss_id
+		if not sprites.has(key):
+			sprites[key] = [
+				SpriteGen.gen_boss_for(boss_id, 0),
+				SpriteGen.gen_boss_for(boss_id, 1),
+			]
 
 
 func _generate_style_sprites(style: String) -> Dictionary:
